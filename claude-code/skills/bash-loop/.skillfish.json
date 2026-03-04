@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "name": "bash-loop",
+  "owner": "theglitchking",
+  "repo": "aeon-flux",
+  "path": "plugins/aeon-flux/skills/bash-loop",
+  "branch": "main",
+  "sha": "35ae3ddcf8a1c169552b83158b85c183e94f558c",
+  "source": "manual"
+}

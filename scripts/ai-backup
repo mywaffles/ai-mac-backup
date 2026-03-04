@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# ai-backup — snapshot Claude/AI config dirs into ~/ai-mac-backup and push to GitHub
+
+set -euo pipefail
+
+REPO="$HOME/ai-mac-backup"
+TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+
+echo "🔄 ai-backup starting: $TIMESTAMP"
+echo ""
+
+# ── 1. Skills ────────────────────────────────────────────────────────────────
+echo "📦 Syncing skills..."
+mkdir -p "$REPO/skills"
+rsync -a --delete \
+  --exclude='*.pyc' --exclude='__pycache__' --exclude='.DS_Store' \
+  "$HOME/.agents/skills/" "$REPO/skills/"
+
+# ── 2. Shell config ──────────────────────────────────────────────────────────
+echo "🐚 Syncing shell config..."
+mkdir -p "$REPO/shell"
+for f in .zshrc .zprofile .bashrc .bash_profile; do
+  [ -f "$HOME/$f" ] && cp "$HOME/$f" "$REPO/shell/$f" || true
+done
+
+# ── 3. Claude Desktop config ─────────────────────────────────────────────────
+echo "🤖 Syncing Claude Desktop config..."
+mkdir -p "$REPO/claude-desktop"
+CLAUDE_DIR="$HOME/Library/Application Support/Claude"
+
+# Copy only config files, not cache/blob/session data
+for f in claude_desktop_config.json config.json window-state.json git-worktrees.json; do
+  [ -f "$CLAUDE_DIR/$f" ] && cp "$CLAUDE_DIR/$f" "$REPO/claude-desktop/$f" || true
+done
+
+# Claude Code settings
+[ -d "$HOME/.claude" ] && rsync -a --delete \
+  --exclude='*.log' --exclude='.DS_Store' --exclude='__pycache__' \
+  --exclude='statsig/' --exclude='ide/' \
+  "$HOME/.claude/" "$REPO/claude-code/" || true
+
+# ── 4. Git commit & push ─────────────────────────────────────────────────────
+echo ""
+cd "$REPO"
+
+# Check if anything changed
+if git diff --quiet && git diff --staged --quiet && [ -z "$(git ls-files --others --exclude-standard)" ]; then
+  echo "✅ Nothing changed since last backup."
+  exit 0
+fi
+
+git add -A
+
+# Show what's changing
+echo "📝 Changes:"
+git diff --staged --stat
+
+git commit -m "backup: $TIMESTAMP"
+
+echo ""
+echo "⬆️  Pushing to GitHub..."
+git push
+
+echo ""
+echo "✅ Backup complete: $TIMESTAMP"

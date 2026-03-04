@@ -1,13 +1,28 @@
-# AI Tools
+# ai-mac-backup
 
-Automation tools, skills, config backups, and workflows for Mac Mini M4 running Claude Desktop.
+Git-versioned backup of AI tools config on Mac Mini M4.  
+Run `ai-backup` before risky sessions. Run `ai-restore` to roll back.
 
-## Contents
+## Commands
 
-- **config-backup/** — Git-based versioning of Claude/OpenClaw config dirs for easy rollback
-- **skills/** — Custom Claude skills
-- **workflows/** — GitHub Actions automation
+```bash
+ai-backup              # snapshot everything and push to GitHub
+ai-restore             # restore from latest backup (with confirmation)
+ai-restore --list      # show available backup points
+ai-restore <hash>      # restore from specific commit
+```
 
-## Setup
+## What Gets Backed Up
 
-Built around a 2026 Mac Mini M4 with Claude Desktop as the primary AI interface.
+| Directory in repo | Source on Mac |
+|---|---|
+| `skills/` | `~/.agents/skills/` |
+| `shell/` | `~/.zshrc`, `~/.zprofile` |
+| `claude-desktop/` | `~/Library/Application Support/Claude/*.json` |
+| `claude-code/` | `~/.claude/` |
+
+## Scripts
+
+Scripts live in `/opt/homebrew/bin/` — available from anywhere in terminal.
+
+Source: `~/ai-mac-backup/scripts/`

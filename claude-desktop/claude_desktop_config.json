@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "shell": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-shell"
+      ]
+    },
+    "screenshot": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@kazuph/mcp-screenshot"
+      ]
+    }
+  },
+  "preferences": {
+    "chromeExtensionEnabled": false,
+    "quickEntryShortcut": "off",
+    "coworkScheduledTasksEnabled": true,
+    "sidebarMode": "chat",
+    "coworkWebSearchEnabled": true
+  }
+}

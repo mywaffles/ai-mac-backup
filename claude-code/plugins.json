@@ -1,0 +1,171 @@
+{
+  "version": 1,
+  "lastUpdated": 1772432250802,
+  "plugins": [
+    {
+      "filename": "automating-mac-apps",
+      "type": "skill",
+      "metadata": {
+        "sourcePath": "skills/automating-mac-apps",
+        "filename": "automating-mac-apps",
+        "name": "automating-mac-apps",
+        "description": "Automates macOS apps via Apple Events using AppleScript (discovery), JXA (legacy), and PyXA (modern Python). Use when asked to \"automate Mac apps\", \"write AppleScript\", \"JXA scripting\", \"osascript automation\", or \"PyXA Python automation\". Foundation skill for all macOS app automation.",
+        "category": "skills",
+        "type": "skill",
+        "size": 108105,
+        "contentHash": "c82d11a49a7ab58e5ea3ab6aacafb11340917a67a3ff034c638f4ab6fd1c4f1f"
+      }
+    },
+    {
+      "filename": "bash-defensive-patterns",
+      "type": "skill",
+      "metadata": {
+        "sourcePath": "bash-defensive-patterns",
+        "filename": "bash-defensive-patterns",
+        "name": "bash-defensive-patterns",
+        "description": "Master defensive Bash programming techniques for production-grade scripts. Use when writing robust shell scripts, CI/CD pipelines, or system utilities requiring fault tolerance and safety.",
+        "category": "plugins",
+        "type": "skill",
+        "size": 11764,
+        "contentHash": "1bbede8b44ba15a9a1dbde17ef61b7f7ab739892732e284bc327ed95d56f2945",
+        "installedAt": 1772431829079,
+        "updatedAt": 1772431829079,
+        "packageName": "shell-scripting",
+        "packageVersion": "1.2.1"
+      }
+    },
+    {
+      "filename": "bash-loop",
+      "type": "skill",
+      "metadata": {
+        "sourcePath": "skills/bash-loop",
+        "filename": "bash-loop",
+        "name": "bash-loop",
+        "description": "Activates tight action-feedback operating mode. Use for any task requiring shell commands, file operations, iterative problem-solving, debugging, or when the user wants efficient execution without verbose explanations.",
+        "category": "skills",
+        "type": "skill",
+        "size": 2321,
+        "contentHash": "e1e8db74cdfd8e2d87c2e0b99b77d8bfbd63156be2505aa77720e386f30f5088"
+      }
+    },
+    {
+      "filename": "find-skills",
+      "type": "skill",
+      "metadata": {
+        "sourcePath": "skills/find-skills",
+        "filename": "find-skills",
+        "name": "find-skills",
+        "description": "Helps users discover and install agent skills when they ask questions like \"how do I do X\", \"find a skill for X\", \"is there a skill that can...\", or express interest in extending capabilities. This skill should be used when the user is looking for functionality that might exist as an installable skill.",
+        "category": "skills",
+        "type": "skill",
+        "size": 4872,
+        "contentHash": "54b44dc9539df865fbb060f62fb062e8232e765852a0cf14c38301fe0c1eb264"
+      }
+    },
+    {
+      "filename": "gog-cli",
+      "type": "skill",
+      "metadata": {
+        "sourcePath": "skills/gog-cli",
+        "filename": "gog-cli",
+        "name": "gog-cli",
+        "description": "This skill provides comprehensive instructions for using gogcli (gog), a fast, script-friendly CLI for Google Workspace services including Gmail, Calendar, Drive, Docs, Sheets, Slides, Chat, Classroom, Contacts, Tasks, People, Groups, and Keep. This skill should be used when the user wants to interact with Google services via the command line, including reading/sending email, managing calendar events, working with Google Drive files, managing classroom courses, or any other Google Workspace operations. The skill assumes gog is installed and authorised.",
+        "category": "skills",
+        "type": "skill",
+        "size": 64402,
+        "contentHash": "e8b1d18be42643497e820510e8705a3b61a3359de407e781865eeeec6fba8785"
+      }
+    },
+    {
+      "filename": "shell-scripting",
+      "type": "skill",
+      "metadata": {
+        "sourcePath": "skills/shell-scripting",
+        "filename": "shell-scripting",
+        "name": "shell-scripting",
+        "description": "Bash Shell 脚本编写",
+        "category": "skills",
+        "type": "skill",
+        "tags": [
+          "linux",
+          "bash",
+          "shell",
+          "scripting",
+          "automation"
+        ],
+        "version": "1.0.0",
+        "author": "terminal-skills",
+        "size": 6415,
+        "contentHash": "2875d42af1cf971fe36b85b1c6b7bb648605980231fde484d97966c262ca47aa"
+      }
+    },
+    {
+      "filename": "shellcheck-configuration",
+      "type": "skill",
+      "metadata": {
+        "sourcePath": "shellcheck-configuration",
+        "filename": "shellcheck-configuration",
+        "name": "shellcheck-configuration",
+        "description": "Master ShellCheck static analysis configuration and usage for shell script quality. Use when setting up linting infrastructure, fixing code issues, or ensuring script portability.",
+        "category": "plugins",
+        "type": "skill",
+        "size": 9512,
+        "contentHash": "af93eafa55b6edd6296c1e5ba8594332a2fe904bc0106133f3272d2331e19eea",
+        "installedAt": 1772431829136,
+        "updatedAt": 1772431829136,
+        "packageName": "shell-scripting",
+        "packageVersion": "1.2.1"
+      }
+    },
+    {
+      "filename": "improve-agent.md",
+      "type": "command",
+      "metadata": {
+        "sourcePath": "improve-agent.md",
+        "filename": "improve-agent.md",
+        "name": "improve-agent",
+        "category": "plugins",
+        "type": "command",
+        "size": 9089,
+        "contentHash": "8e283c1bf5801d6bbcb47f4c1769f41d886ec3915375a39aaa7fd6f95f3e9e50",
+        "installedAt": 1772431957445,
+        "updatedAt": 1772431957445,
+        "packageName": "agent-orchestration",
+        "packageVersion": "1.2.1"
+      }
+    },
+    {
+      "filename": "multi-agent-optimize.md",
+      "type": "command",
+      "metadata": {
+        "sourcePath": "multi-agent-optimize.md",
+        "filename": "multi-agent-optimize.md",
+        "name": "multi-agent-optimize",
+        "category": "plugins",
+        "type": "command",
+        "size": 5688,
+        "contentHash": "d336eac66296ba0ae83a82027f648b12b3d0260f8d61696af21df7647c9ad22d",
+        "installedAt": 1772431957502,
+        "updatedAt": 1772431957502,
+        "packageName": "agent-orchestration",
+        "packageVersion": "1.2.1"
+      }
+    },
+    {
+      "filename": "browser-use",
+      "type": "skill",
+      "metadata": {
+        "sourcePath": "skills/browser-use",
+        "filename": "browser-use",
+        "name": "browser-use",
+        "description": "Automates browser interactions for web testing, form filling, screenshots, and data extraction. Use when the user needs to navigate websites, interact with web pages, fill forms, take screenshots, or extract information from web pages.",
+        "category": "skills",
+        "type": "skill",
+        "size": 22226,
+        "contentHash": "a5460082df718aa069a5f467487c23c12a76e900a1845d39480420507e66c9e1",
+        "installedAt": 1772432250802,
+        "updatedAt": 1772432250802
+      }
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Sensitive shell values — back up structure but not secrets
+# (comment these out if you want full zshrc backed up)
+# shell/.zshrc
+
+# Claude Desktop — skip cache and runtime data
+claude-desktop/Cache/
+claude-desktop/blob_storage/
+claude-desktop/Session\ Storage/
+claude-desktop/Local\ Storage/
+claude-desktop/IndexedDB/
+claude-desktop/GPUCache/
+claude-desktop/DawnGraphiteCache/
+claude-desktop/DawnWebGPUCache/
+claude-desktop/Code\ Cache/
+claude-desktop/sentry/
+
+# Claude Code — skip logs and temp
+claude-code/statsig/
+claude-code/ide/
+claude-code/*.log
+claude-code/**/*.log
+
+# Python
+**/__pycache__/
+**/*.pyc
+
+# npm
+node_modules/
+
+# Never commit secrets
+shell/.zshrc
+skills/context7/.env
