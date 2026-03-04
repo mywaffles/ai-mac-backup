@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # ai-restore — restore Claude/AI config dirs from ~/ai-mac-backup
 # Usage:
-#   ai-restore              → restore from latest backup
-#   ai-restore <commit>     → restore from specific commit hash or date
-#   ai-restore --list       → show available backups
+#   ai-restore              → list available backups
+#   ai-restore --last       → restore from most recent backup
+#   ai-restore <commit>     → restore from specific commit hash
 
 set -euo pipefail
 
@@ -16,33 +16,47 @@ fi
 
 cd "$REPO"
 
-# ── List mode ────────────────────────────────────────────────────────────────
-if [ "${1:-}" = "--list" ]; then
-  echo "📋 Available backups:"
-  git log --oneline --grep="^backup:" | head -20
+# ── Default: list backups ────────────────────────────────────────────────────
+if [ "${1:-}" = "" ]; then
+  echo "📋 Available backups (most recent first):"
+  echo ""
+  git log --pretty=format:"%C(yellow)%h%Creset  %C(cyan)%ai%Creset  %s" --grep="^backup:" | head -20
+  echo ""
+  echo "Usage:"
+  echo "  ai-restore --last         restore most recent backup"
+  echo "  ai-restore <commit>       restore from specific commit hash"
   exit 0
 fi
 
 # ── Determine target commit ──────────────────────────────────────────────────
-TARGET="${1:-HEAD}"
-
-if [ "$TARGET" = "HEAD" ]; then
-  LABEL="latest backup"
+if [ "${1}" = "--last" ]; then
+  TARGET=$(git log -1 --pretty=format:"%h" --grep="^backup:")
+  if [ -z "$TARGET" ]; then
+    echo "❌ No backups found."
+    exit 1
+  fi
+  LABEL="last backup"
 else
+  TARGET="${1}"
   LABEL="commit $TARGET"
 fi
 
 echo "🔄 ai-restore from $LABEL"
 echo ""
 
-# Show what the target looks like
 COMMIT_MSG=$(git log -1 --pretty=format:"%h %s (%ai)" "$TARGET" 2>/dev/null || echo "unknown")
 echo "📌 Target: $COMMIT_MSG"
 echo ""
 
 # Preview what will change
+CHANGED=$(git diff --name-only "$TARGET" -- skills/ shell/ claude-desktop/ claude-code/ 2>/dev/null || true)
+if [ -z "$CHANGED" ]; then
+  echo "✅ No differences from current state — nothing to restore."
+  exit 0
+fi
+
 echo "📝 Files that will be restored:"
-git diff --name-only "$TARGET" -- skills/ shell/ claude-desktop/ claude-code/ 2>/dev/null | sed 's/^/  /' || true
+echo "$CHANGED" | sed 's/^/  /'
 echo ""
 
 read -r -p "⚠️  Restore these files? This will overwrite current versions. [y/N] " confirm
@@ -65,7 +79,7 @@ fi
 if [ -d "$REPO/shell" ]; then
   echo "🐚 Restoring shell config..."
   git checkout "$TARGET" -- shell/ 2>/dev/null || true
-  for f in .zshrc .zprofile .bashrc .bash_profile; do
+  for f in .zprofile .bashrc .bash_profile; do
     [ -f "$REPO/shell/$f" ] && cp "$REPO/shell/$f" "$HOME/$f" && echo "   → ~/$f" || true
   done
 fi
