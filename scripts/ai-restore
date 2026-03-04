@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ai-restore — restore Claude/AI config dirs from ~/ai-backup-mac
+# ai-restore — restore paths listed in ~/ai-backup-mac/backup-paths.conf
 # Usage:
 #   ai-restore              → list available backups
 #   ai-restore --last       → restore from most recent backup
@@ -8,6 +8,7 @@
 set -euo pipefail
 
 REPO="$HOME/ai-backup-mac"
+CONF="$REPO/backup-paths.conf"
 LOG="$REPO/ai-backup.log"
 BAK_SUFFIX=".bak-$(date '+%Y%m%d-%H%M%S')"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
@@ -51,26 +52,32 @@ COMMIT_MSG=$(git log -1 --pretty=format:"%h %s (%ai)" "$TARGET" 2>/dev/null || e
 echo "📌 Target: $COMMIT_MSG"
 echo ""
 
-# ── Checkout target into temp dir and diff vs live ───────────────────────────
-TMPDIR_PREVIEW=$(mktemp -d)
-trap "rm -rf $TMPDIR_PREVIEW" EXIT
+# ── Checkout target into temp dir ────────────────────────────────────────────
+TMPDIR_RESTORE=$(mktemp -d)
+trap "rm -rf $TMPDIR_RESTORE" EXIT
 
-git --work-tree="$TMPDIR_PREVIEW" checkout "$TARGET" -- skills/ shell/ claude-desktop/ claude-code/ 2>/dev/null || true
+git --work-tree="$TMPDIR_RESTORE" checkout "$TARGET" -- . 2>/dev/null || true
 
+# ── Diff backup vs live, building restore plan ───────────────────────────────
 CHANGED=""
-CLAUDE_DIR="$HOME/Library/Application Support/Claude"
 
-[ -d "$TMPDIR_PREVIEW/skills" ] && CHANGED+=$(diff -rq "$TMPDIR_PREVIEW/skills" "$HOME/.agents/skills" 2>/dev/null | sed 's/^/  /' || true)
+while IFS= read -r line; do
+  [[ "$line" =~ ^[[:space:]]*$ ]] && continue
+  [[ "$line" =~ ^[[:space:]]*# ]] && continue
 
-for f in .zprofile .bashrc .bash_profile; do
-  [ -f "$TMPDIR_PREVIEW/shell/$f" ] && { diff -q "$TMPDIR_PREVIEW/shell/$f" "$HOME/$f" 2>/dev/null || CHANGED+="  shell/$f differs"$'\n'; }
-done
+  SOURCE="${line/\~/$HOME}"
+  DEST_NAME=$(basename "$SOURCE")
 
-for f in claude_desktop_config.json config.json window-state.json git-worktrees.json; do
-  [ -f "$TMPDIR_PREVIEW/claude-desktop/$f" ] && { diff -q "$TMPDIR_PREVIEW/claude-desktop/$f" "$CLAUDE_DIR/$f" 2>/dev/null || CHANGED+="  claude-desktop/$f differs"$'\n'; }
-done
-
-[ -d "$TMPDIR_PREVIEW/claude-code" ] && CHANGED+=$(diff -rq "$TMPDIR_PREVIEW/claude-code" "$HOME/.claude" 2>/dev/null | sed 's/^/  /' || true)
+  if [ -f "$SOURCE" ]; then
+    PARENT=$(basename "$(dirname "$SOURCE")")
+    PARENT="${PARENT/Application Support/app-support}"
+    REPO_COPY="$TMPDIR_RESTORE/files/$PARENT/$DEST_NAME"
+    [ -f "$REPO_COPY" ] && { diff -q "$REPO_COPY" "$SOURCE" 2>/dev/null || CHANGED+="  $line differs"$'\n'; }
+  elif [ -d "$SOURCE" ]; then
+    REPO_COPY="$TMPDIR_RESTORE/$DEST_NAME"
+    [ -d "$REPO_COPY" ] && CHANGED+=$(diff -rq "$REPO_COPY" "$SOURCE" 2>/dev/null | sed 's/^/  /' || true)
+  fi
+done < "$CONF"
 
 if [ -z "$CHANGED" ]; then
   echo "✅ No differences from current state — nothing to restore."
@@ -85,77 +92,55 @@ echo ""
 read -r -p "⚠️  Restore from backup? Existing files will be renamed to *${BAK_SUFFIX}. [y/N] " confirm
 if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
   echo "Cancelled."
-  echo "[$TIMESTAMP] RESTORE: cancelled by user (target: $COMMIT_MSG)" >> "$LOG"
+  echo "[$TIMESTAMP] RESTORE: cancelled (target: $COMMIT_MSG)" >> "$LOG"
   exit 0
 fi
 
 echo ""
-echo "📁 Backup suffix: $BAK_SUFFIX"
+echo "📁 Renaming existing files with suffix: $BAK_SUFFIX"
 echo ""
 
-# Track renamed files for log
 RENAMED=()
 
-# ── Restore skills ───────────────────────────────────────────────────────────
-if [ -d "$TMPDIR_PREVIEW/skills" ]; then
-  echo "📦 Restoring skills..."
-  if [ -d "$HOME/.agents/skills" ]; then
-    mv "$HOME/.agents/skills" "$HOME/.agents/skills${BAK_SUFFIX}"
-    echo "   ← renamed: ~/.agents/skills${BAK_SUFFIX}"
-    RENAMED+=("~/.agents/skills${BAK_SUFFIX}")
-  fi
-  rsync -a "$TMPDIR_PREVIEW/skills/" "$HOME/.agents/skills/"
-  echo "   → ~/.agents/skills/"
-fi
+# ── Restore each path ────────────────────────────────────────────────────────
+while IFS= read -r line; do
+  [[ "$line" =~ ^[[:space:]]*$ ]] && continue
+  [[ "$line" =~ ^[[:space:]]*# ]] && continue
 
-# ── Restore shell config ─────────────────────────────────────────────────────
-if [ -d "$TMPDIR_PREVIEW/shell" ]; then
-  echo "🐚 Restoring shell config..."
-  for f in .zprofile .bashrc .bash_profile; do
-    if [ -f "$TMPDIR_PREVIEW/shell/$f" ]; then
-      if [ -f "$HOME/$f" ]; then
-        mv "$HOME/$f" "$HOME/$f${BAK_SUFFIX}"
-        echo "   ← renamed: ~/$f${BAK_SUFFIX}"
-        RENAMED+=("~/$f${BAK_SUFFIX}")
+  SOURCE="${line/\~/$HOME}"
+  DEST_NAME=$(basename "$SOURCE")
+
+  if [ -f "$SOURCE" ]; then
+    PARENT=$(basename "$(dirname "$SOURCE")")
+    PARENT="${PARENT/Application Support/app-support}"
+    REPO_COPY="$TMPDIR_RESTORE/files/$PARENT/$DEST_NAME"
+    if [ -f "$REPO_COPY" ]; then
+      if [ -f "$SOURCE" ]; then
+        mv "$SOURCE" "${SOURCE}${BAK_SUFFIX}"
+        echo "  ← renamed: ${line}${BAK_SUFFIX}"
+        RENAMED+=("${line}${BAK_SUFFIX}")
       fi
-      cp "$TMPDIR_PREVIEW/shell/$f" "$HOME/$f"
-      echo "   → ~/$f"
+      cp "$REPO_COPY" "$SOURCE"
+      echo "  → $line"
     fi
-  done
-fi
-
-# ── Restore Claude Desktop config ────────────────────────────────────────────
-if [ -d "$TMPDIR_PREVIEW/claude-desktop" ]; then
-  echo "🤖 Restoring Claude Desktop config..."
-  for f in claude_desktop_config.json config.json window-state.json git-worktrees.json; do
-    if [ -f "$TMPDIR_PREVIEW/claude-desktop/$f" ]; then
-      if [ -f "$CLAUDE_DIR/$f" ]; then
-        mv "$CLAUDE_DIR/$f" "$CLAUDE_DIR/$f${BAK_SUFFIX}"
-        echo "   ← renamed: $f${BAK_SUFFIX}"
-        RENAMED+=("Claude/$f${BAK_SUFFIX}")
+  elif [ -d "$SOURCE" ]; then
+    REPO_COPY="$TMPDIR_RESTORE/$DEST_NAME"
+    if [ -d "$REPO_COPY" ]; then
+      if [ -d "$SOURCE" ]; then
+        mv "$SOURCE" "${SOURCE}${BAK_SUFFIX}"
+        echo "  ← renamed: ${line}${BAK_SUFFIX}"
+        RENAMED+=("${line}${BAK_SUFFIX}")
       fi
-      cp "$TMPDIR_PREVIEW/claude-desktop/$f" "$CLAUDE_DIR/$f"
-      echo "   → $f"
+      rsync -a "$REPO_COPY/" "$SOURCE/"
+      echo "  → $line"
     fi
-  done
-fi
-
-# ── Restore Claude Code settings ─────────────────────────────────────────────
-if [ -d "$TMPDIR_PREVIEW/claude-code" ]; then
-  echo "💻 Restoring Claude Code settings..."
-  if [ -d "$HOME/.claude" ]; then
-    mv "$HOME/.claude" "$HOME/.claude${BAK_SUFFIX}"
-    echo "   ← renamed: ~/.claude${BAK_SUFFIX}"
-    RENAMED+=("~/.claude${BAK_SUFFIX}")
   fi
-  rsync -a "$TMPDIR_PREVIEW/claude-code/" "$HOME/.claude/"
-  echo "   → ~/.claude/"
-fi
+done < "$CONF"
 
-# Reset repo working tree back to HEAD
+# Reset repo working tree
 git checkout HEAD -- . 2>/dev/null || true
 
-# ── Log ───────────────────────────────────────────────────────────────────────
+# ── Log & push ────────────────────────────────────────────────────────────────
 {
   echo "[$TIMESTAMP] RESTORE from $COMMIT_MSG"
   echo "  Renamed (bad files preserved at):"
@@ -165,7 +150,6 @@ git checkout HEAD -- . 2>/dev/null || true
   echo ""
 } >> "$LOG"
 
-# ── Commit the log update ─────────────────────────────────────────────────────
 git add "$LOG"
 git diff --staged --quiet || git commit -m "log: restore at $TIMESTAMP"
 git push

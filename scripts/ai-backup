@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# ai-backup — snapshot Claude/AI config dirs into ~/ai-backup-mac and push to GitHub
+# ai-backup — snapshot paths listed in ~/ai-backup-mac/backup-paths.conf
 
 set -euo pipefail
 
 REPO="$HOME/ai-backup-mac"
+CONF="$REPO/backup-paths.conf"
 LOG="$REPO/ai-backup.log"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 
@@ -12,38 +13,53 @@ if [ ! -d "$REPO/.git" ]; then
   exit 1
 fi
 
+if [ ! -f "$CONF" ]; then
+  echo "❌ Config not found at $CONF"
+  exit 1
+fi
+
 echo "🔄 ai-backup starting: $TIMESTAMP"
 echo ""
 
-# ── 1. Skills ────────────────────────────────────────────────────────────────
-echo "📦 Syncing skills..."
-mkdir -p "$REPO/skills"
-rsync -a --delete \
-  --exclude='*.pyc' --exclude='__pycache__' --exclude='.DS_Store' \
-  "$HOME/.agents/skills/" "$REPO/skills/"
+# ── Sync each path from config ───────────────────────────────────────────────
+while IFS= read -r line; do
+  # Skip blank lines and comments
+  [[ "$line" =~ ^[[:space:]]*$ ]] && continue
+  [[ "$line" =~ ^[[:space:]]*# ]] && continue
 
-# ── 2. Shell config ──────────────────────────────────────────────────────────
-echo "🐚 Syncing shell config..."
-mkdir -p "$REPO/shell"
-for f in .zprofile .bashrc .bash_profile; do
-  [ -f "$HOME/$f" ] && cp "$HOME/$f" "$REPO/shell/$f" || true
-done
+  # Expand ~ 
+  SOURCE="${line/\~/$HOME}"
 
-# ── 3. Claude Desktop config ─────────────────────────────────────────────────
-echo "🤖 Syncing Claude Desktop config..."
-mkdir -p "$REPO/claude-desktop"
-CLAUDE_DIR="$HOME/Library/Application Support/Claude"
-for f in claude_desktop_config.json config.json window-state.json git-worktrees.json; do
-  [ -f "$CLAUDE_DIR/$f" ] && cp "$CLAUDE_DIR/$f" "$REPO/claude-desktop/$f" || true
-done
+  if [ ! -e "$SOURCE" ]; then
+    echo "⚠️  Skipping (not found): $line"
+    continue
+  fi
 
-# ── 4. Claude Code settings ──────────────────────────────────────────────────
-[ -d "$HOME/.claude" ] && rsync -a --delete \
-  --exclude='*.log' --exclude='.DS_Store' --exclude='__pycache__' \
-  --exclude='statsig/' --exclude='ide/' \
-  "$HOME/.claude/" "$REPO/claude-code/" || true
+  # Destination: last path component under repo
+  DEST_NAME=$(basename "$SOURCE")
+  # Group loose files by their parent dir name for clarity
+  # Files go into a subdir named after their parent; dirs go in directly
+  if [ -f "$SOURCE" ]; then
+    PARENT=$(basename "$(dirname "$SOURCE")")
+    # Simplify known verbose paths
+    PARENT="${PARENT/Application Support/app-support}"
+    DEST="$REPO/files/$PARENT"
+    mkdir -p "$DEST"
+    cp "$SOURCE" "$DEST/$DEST_NAME"
+    echo "  📄 $line → files/$PARENT/$DEST_NAME"
+  elif [ -d "$SOURCE" ]; then
+    DEST="$REPO/$DEST_NAME"
+    mkdir -p "$DEST"
+    rsync -a --delete \
+      --exclude='*.pyc' --exclude='__pycache__' --exclude='.DS_Store' \
+      --exclude='*.log' --exclude='statsig/' --exclude='ide/' \
+      "$SOURCE/" "$DEST/"
+    echo "  📁 $line → $DEST_NAME/"
+  fi
 
-# ── 5. Git commit & push ─────────────────────────────────────────────────────
+done < "$CONF"
+
+# ── Git commit & push ────────────────────────────────────────────────────────
 echo ""
 cd "$REPO"
 
@@ -65,7 +81,6 @@ echo ""
 echo "⬆️  Pushing to GitHub..."
 git push
 
-# ── 6. Log ───────────────────────────────────────────────────────────────────
 {
   echo "[$TIMESTAMP] BACKUP"
   echo "$CHANGES" | sed 's/^/  /'
