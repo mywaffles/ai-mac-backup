@@ -1,0 +1,121 @@
+{
+  "meta": {
+    "lastTouchedVersion": "2026.3.1",
+    "lastTouchedAt": "2026-03-03T03:57:08.369Z"
+  },
+  "secrets": {
+    "providers": {
+      "onepassword": {
+        "source": "exec",
+        "command": "/opt/homebrew/bin/op",
+        "allowSymlinkCommand": true,
+        "trustedDirs": ["/opt/homebrew"],
+        "args": ["read"],
+        "passEnv": ["HOME"],
+        "jsonOnly": false
+      }
+    },
+    "defaults": {
+      "exec": "onepassword"
+    }
+  },
+  "env": {
+    "OPENROUTER_API_KEY": {
+      "source": "exec",
+      "provider": "onepassword",
+      "id": "op://AI Agents/OpenRouter API Key - Mac Mini/credential"
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "openrouter/anthropic/claude-sonnet-4.5",
+        "fallbacks": [
+          "openrouter/anthropic/claude-opus-4.6",
+          "openrouter/google/gemini-2.5-flash-preview"
+        ]
+      },
+      "models": {
+        "openrouter/openrouter/auto": {},
+        "openrouter/anthropic/claude-sonnet-4.5": {},
+        "openrouter/google/gemini-2.5-flash-preview": {},
+        "openrouter/google/gemini-3-pro": {},
+        "openrouter/deepseek/deepseek-chat": {},
+        "openrouter/anthropic/claude-opus-4.6": {}
+      },
+      "memorySearch": {
+        "enabled": false
+      }
+    },
+    "list": [
+      {
+        "id": "main",
+        "identity": {
+          "name": "Gay Deceiver",
+          "emoji": "🚗"
+        }
+      }
+    ]
+  },
+  "tools": {
+    "web": {
+      "search": {
+        "enabled": true,
+        "provider": "perplexity",
+        "perplexity": {
+          "apiKey": {
+            "source": "exec",
+            "provider": "onepassword",
+            "id": "op://AI Agents/OpenRouter API Key - Mac Mini/credential"
+          },
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "model": "perplexity/sonar-pro"
+        }
+      }
+    }
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerDisplay": "raw"
+  },
+  "channels": {
+    "bluebubbles": {
+      "enabled": true,
+      "serverUrl": "http://localhost:1234",
+      "password": {
+        "source": "exec",
+        "provider": "onepassword",
+        "id": "op://AI Agents/BlueBubbles Server/password"
+      },
+      "dmPolicy": "allowlist",
+      "allowFrom": [
+        "+17022739196"
+      ],
+      "groupAllowFrom": [
+        "+17022739196"
+      ],
+      "groupPolicy": "allowlist"
+    }
+  },
+  "gateway": {
+    "port": 18789,
+    "mode": "local",
+    "bind": "loopback",
+    "auth": {
+      "token": {
+        "source": "exec",
+        "provider": "onepassword",
+        "id": "op://AI Agents/OpenClaw Gateway Auth Token/credential"
+      }
+    }
+  },
+  "plugins": {
+    "entries": {
+      "bluebubbles": {
+        "enabled": true
+      }
+    }
+  }
+}
