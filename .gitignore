@@ -34,3 +34,6 @@ node_modules/
 # Never commit secrets
 shell/.zshrc
 skills/context7/.env
+
+# Exclude embedded git repos in backed-up content
+workspace/.git
