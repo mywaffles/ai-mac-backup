@@ -95,3 +95,9 @@
    test-backup.sh | 5 +++--
    2 files changed, 7 insertions(+), 2 deletions(-)
 
+[2026-03-03 21:37:39] RESTORE from cc1565e backup: 2026-03-03 21:37:38 (2026-03-03 21:37:38 -0700)
+  Renamed (bad files preserved at):
+    \~/.agents/skills.bak-20260303-213739
+    \~/Library/Application Support/Claude/claude_desktop_config.json.bak-20260303-213739
+    \~/.claude.bak-20260303-213739
+
