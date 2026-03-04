@@ -2,8 +2,8 @@
 # ai-restore — restore paths listed in ~/ai-backup-mac/backup-paths.conf
 # Usage:
 #   ai-restore              → list available backups
-#   ai-restore --last       → restore from most recent backup
-#   ai-restore <commit>     → restore from specific commit hash
+#   ai-restore --last       → restore most recent backup (exact snapshot)
+#   ai-restore <commit>     → restore exact snapshot at that commit
 
 set -euo pipefail
 
@@ -13,18 +13,17 @@ LOG="$REPO/ai-backup.log"
 BAK_SUFFIX=".bak-$(date '+%Y%m%d-%H%M%S')"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 
-# ── Guards ───────────────────────────────────────────────────────────────────
+# ── Guards ────────────────────────────────────────────────────────────────────
 [ -d "$REPO/.git" ] || { echo "❌ Repo not found at $REPO"; exit 1; }
 [ -f "$CONF" ]      || { echo "❌ Config not found at $CONF"; exit 1; }
 
 cd "$REPO"
 
-# ── Shared: resolve dest path for a source path ──────────────────────────────
+# ── Shared: resolve repo-relative dest for a live source path ────────────────
 dest_for() {
   local src="$1"
   local name; name=$(basename "$src")
-  if [ -f "$src" ] || [[ "$src" != */ ]] && [ ! -d "$src" ]; then
-    # treat as file path (may not exist on disk yet if restoring)
+  if [ -f "$src" ] || { [[ "$src" != */ ]] && [ ! -d "$src" ]; }; then
     local parent; parent=$(basename "$(dirname "$src")" | tr ' ' '-')
     echo "files/$parent/$name"
   else
@@ -32,7 +31,7 @@ dest_for() {
   fi
 }
 
-# ── List mode ────────────────────────────────────────────────────────────────
+# ── List mode ─────────────────────────────────────────────────────────────────
 if [ "${1:-}" = "" ]; then
   echo "📋 Available backups (most recent first):"
   echo ""
@@ -40,7 +39,7 @@ if [ "${1:-}" = "" ]; then
   echo ""
   echo "Usage:"
   echo "  ai-restore --last         restore most recent backup"
-  echo "  ai-restore <commit>       restore from specific commit hash"
+  echo "  ai-restore <commit>       restore exact snapshot at that commit"
   exit 0
 fi
 
@@ -59,12 +58,37 @@ echo "🔄 ai-restore from $LABEL"
 echo "📌 Target: $COMMIT_MSG"
 echo ""
 
-# ── Checkout target into temp dir ─────────────────────────────────────────────
+# ── Checkout target snapshot into temp dir ───────────────────────────────────
 TMPDIR_RESTORE=$(mktemp -d)
 trap 'rm -rf "$TMPDIR_RESTORE"' EXIT
 git --work-tree="$TMPDIR_RESTORE" checkout "$TARGET" -- . 2>/dev/null || true
 
-# ── Build restore plan: collect (source, repo_copy) pairs that differ ─────────
+# ── Read backup-paths.conf FROM THE SNAPSHOT (not current) ───────────────────
+# This ensures we restore exactly what was tracked at that point in time.
+SNAPSHOT_CONF="$TMPDIR_RESTORE/backup-paths.conf"
+[ -f "$SNAPSHOT_CONF" ] || { echo "❌ backup-paths.conf not found in snapshot"; exit 1; }
+
+# ── Warn if scripts or backup-paths.conf differ ──────────────────────────────
+SCRIPTS_CHANGED=""
+if [ -d "$TMPDIR_RESTORE/scripts" ]; then
+  SDIFF=$(diff -rq "$TMPDIR_RESTORE/scripts" "$REPO/scripts" 2>/dev/null || true)
+  [ -n "$SDIFF" ] && SCRIPTS_CHANGED="$SDIFF"
+fi
+if ! diff -q "$SNAPSHOT_CONF" "$CONF" &>/dev/null; then
+  SCRIPTS_CHANGED+=$'\n'"  backup-paths.conf differs"
+fi
+
+if [ -n "$SCRIPTS_CHANGED" ]; then
+  echo "⚠️  Note: this snapshot has different versions of:"
+  echo "$SCRIPTS_CHANGED" | sed 's/^/  /'
+  echo ""
+  echo "  These are the backup scripts and path config themselves."
+  echo "  They will NOT be overwritten unless you say yes below."
+  echo "  (They live in the repo at ~/ai-backup-mac/, not in the backed-up paths.)"
+  echo ""
+fi
+
+# ── Build restore plan from the snapshot's backup-paths.conf ─────────────────
 declare -a PLAN_SRC=()
 declare -a PLAN_REPO=()
 CHANGED=""
@@ -93,7 +117,7 @@ while IFS= read -r line; do
       fi
     fi
   fi
-done < "$CONF"
+done < "$SNAPSHOT_CONF"
 
 if [ -z "$CHANGED" ]; then
   echo "✅ No differences from current state — nothing to restore."
@@ -101,7 +125,7 @@ if [ -z "$CHANGED" ]; then
   exit 0
 fi
 
-echo "📝 Differences between backup and current state:"
+echo "📝 Differences between snapshot and current state:"
 echo "$CHANGED"
 
 read -r -p "⚠️  Restore from backup? Existing files will be renamed *${BAK_SUFFIX}. [y/N] " confirm
@@ -128,7 +152,6 @@ for i in "${!PLAN_SRC[@]}"; do
     RENAMED+=("${SOURCE/#$HOME/\~}${BAK_SUFFIX}")
     cp "$REPO_COPY" "$SOURCE"
     echo "  → ${SOURCE/#$HOME/\~}"
-
   elif [ -d "$SOURCE" ]; then
     mv "$SOURCE" "${SOURCE}${BAK_SUFFIX}"
     echo "  ← renamed: ${SOURCE/#$HOME/\~}${BAK_SUFFIX}"
@@ -138,7 +161,7 @@ for i in "${!PLAN_SRC[@]}"; do
   fi
 done
 
-# Reset repo working tree
+# Reset repo working tree to HEAD (don't leave it in detached state)
 git checkout HEAD -- . 2>/dev/null || true
 
 # ── Log & push ────────────────────────────────────────────────────────────────
