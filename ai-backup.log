@@ -52,3 +52,10 @@
 
 [2026-03-03 21:29:00] BACKUP: no changes
 
+[2026-03-03 21:30:22] BACKUP
+   CLAUDE.md                     | 28 ++++++++++++++++
+   README.md                     | 53 +++++++++++++++++++++--------
+   ai-backup.log                 |  2 ++
+   skills/ai-backup-mac/SKILL.md | 78 +++++++++++++++++++++++++++++++++++++++++++
+   4 files changed, 148 insertions(+), 13 deletions(-)
+
