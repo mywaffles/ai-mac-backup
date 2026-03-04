@@ -152,3 +152,11 @@
 
 [2026-03-03 21:52:42] RESTORE: no differences from e47b6d5 backup: 2026-03-03 21:52:39 (2026-03-03 21:52:39 -0700)
 
+[2026-03-03 22:07:59] BACKUP
+   ai-backup.log                 | 16 ++++++++++++++++
+   backup-paths.conf             |  1 +
+   files/.openclaw/openclaw.json |  8 ++++----
+   files/cron/jobs.json          |  4 ++++
+   identity/device-auth.json     |  2 +-
+   5 files changed, 26 insertions(+), 5 deletions(-)
+
