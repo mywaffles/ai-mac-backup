@@ -74,3 +74,9 @@
    skills/TEST-backup-skill/SKILL.md |   6 --
    4 files changed, 103 insertions(+), 107 deletions(-)
 
+[2026-03-03 21:37:03] BACKUP
+   skills/TEST-backup-skill/SKILL.md |  6 +++
+   skills/ai-backup-mac/SKILL.md     | 82 ++++++++++-----------------------------
+   test-backup.sh                    | 21 +++++++++-
+   3 files changed, 47 insertions(+), 62 deletions(-)
+
