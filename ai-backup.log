@@ -1,0 +1,13 @@
+[2026-03-03 21:19:46] BACKUP
+   skills/test-skill-delete-me/SKILL.md | 2 +-
+   1 file changed, 1 insertion(+), 1 deletion(-)
+
+[2026-03-03 21:19:57] RESTORE from 22eff56 backup: 2026-03-03 21:19:46 (2026-03-03 21:19:46 -0700)
+  Renamed (bad files preserved at):
+    ~/.agents/skills.bak-20260303-211957
+    Claude/claude_desktop_config.json.bak-20260303-211957
+    Claude/config.json.bak-20260303-211957
+    Claude/window-state.json.bak-20260303-211957
+    Claude/git-worktrees.json.bak-20260303-211957
+    ~/.claude.bak-20260303-211957
+
