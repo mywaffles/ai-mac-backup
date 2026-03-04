@@ -8,6 +8,7 @@
 set -euo pipefail
 
 REPO="$HOME/ai-mac-backup"
+BAK_SUFFIX=".bak-$(date '+%Y%m%d-%H%M%S')"
 
 if [ ! -d "$REPO/.git" ]; then
   echo "❌ Repo not found at $REPO"
@@ -48,33 +49,25 @@ COMMIT_MSG=$(git log -1 --pretty=format:"%h %s (%ai)" "$TARGET" 2>/dev/null || e
 echo "📌 Target: $COMMIT_MSG"
 echo ""
 
-# ── Preview: check out target into temp dir and diff vs live filesystem ──────
+# ── Checkout target into temp dir and diff vs live filesystem ────────────────
 TMPDIR_PREVIEW=$(mktemp -d)
 trap "rm -rf $TMPDIR_PREVIEW" EXIT
 
 git --work-tree="$TMPDIR_PREVIEW" checkout "$TARGET" -- skills/ shell/ claude-desktop/ claude-code/ 2>/dev/null || true
 
 CHANGED=""
+CLAUDE_DIR="$HOME/Library/Application Support/Claude"
 
-# Compare skills
 [ -d "$TMPDIR_PREVIEW/skills" ] && CHANGED+=$(diff -rq "$TMPDIR_PREVIEW/skills" "$HOME/.agents/skills" 2>/dev/null | sed 's/^/  /' || true)
 
-# Compare shell
 for f in .zprofile .bashrc .bash_profile; do
-  if [ -f "$TMPDIR_PREVIEW/shell/$f" ]; then
-    diff -q "$TMPDIR_PREVIEW/shell/$f" "$HOME/$f" 2>/dev/null || CHANGED+="  shell/$f differs"$'\n'
-  fi
+  [ -f "$TMPDIR_PREVIEW/shell/$f" ] && { diff -q "$TMPDIR_PREVIEW/shell/$f" "$HOME/$f" 2>/dev/null || CHANGED+="  shell/$f differs"$'\n'; }
 done
 
-# Compare claude-desktop
-CLAUDE_DIR="$HOME/Library/Application Support/Claude"
 for f in claude_desktop_config.json config.json window-state.json git-worktrees.json; do
-  if [ -f "$TMPDIR_PREVIEW/claude-desktop/$f" ]; then
-    diff -q "$TMPDIR_PREVIEW/claude-desktop/$f" "$CLAUDE_DIR/$f" 2>/dev/null || CHANGED+="  claude-desktop/$f differs"$'\n'
-  fi
+  [ -f "$TMPDIR_PREVIEW/claude-desktop/$f" ] && { diff -q "$TMPDIR_PREVIEW/claude-desktop/$f" "$CLAUDE_DIR/$f" 2>/dev/null || CHANGED+="  claude-desktop/$f differs"$'\n'; }
 done
 
-# Compare claude-code
 [ -d "$TMPDIR_PREVIEW/claude-code" ] && CHANGED+=$(diff -rq "$TMPDIR_PREVIEW/claude-code" "$HOME/.claude" 2>/dev/null | sed 's/^/  /' || true)
 
 if [ -z "$CHANGED" ]; then
@@ -86,38 +79,59 @@ echo "📝 Differences between backup and current state:"
 echo "$CHANGED"
 echo ""
 
-read -r -p "⚠️  Restore from backup? This will overwrite current versions. [y/N] " confirm
+read -r -p "⚠️  Restore from backup? Existing files will be renamed to *${BAK_SUFFIX}. [y/N] " confirm
 if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
   echo "Cancelled."
   exit 0
 fi
 
 echo ""
+echo "📁 Backup suffix: $BAK_SUFFIX"
+echo ""
 
-# ── Restore from the temp checkout ──────────────────────────────────────────
+# ── Restore skills ───────────────────────────────────────────────────────────
 if [ -d "$TMPDIR_PREVIEW/skills" ]; then
   echo "📦 Restoring skills..."
-  rsync -a --delete "$TMPDIR_PREVIEW/skills/" "$HOME/.agents/skills/"
+  if [ -d "$HOME/.agents/skills" ]; then
+    mv "$HOME/.agents/skills" "$HOME/.agents/skills${BAK_SUFFIX}"
+    echo "   ← renamed: ~/.agents/skills${BAK_SUFFIX}"
+  fi
+  rsync -a "$TMPDIR_PREVIEW/skills/" "$HOME/.agents/skills/"
   echo "   → ~/.agents/skills/"
 fi
 
+# ── Restore shell config ─────────────────────────────────────────────────────
 if [ -d "$TMPDIR_PREVIEW/shell" ]; then
   echo "🐚 Restoring shell config..."
   for f in .zprofile .bashrc .bash_profile; do
-    [ -f "$TMPDIR_PREVIEW/shell/$f" ] && cp "$TMPDIR_PREVIEW/shell/$f" "$HOME/$f" && echo "   → ~/$f" || true
+    if [ -f "$TMPDIR_PREVIEW/shell/$f" ]; then
+      [ -f "$HOME/$f" ] && mv "$HOME/$f" "$HOME/$f${BAK_SUFFIX}" && echo "   ← renamed: ~/$f${BAK_SUFFIX}"
+      cp "$TMPDIR_PREVIEW/shell/$f" "$HOME/$f"
+      echo "   → ~/$f"
+    fi
   done
 fi
 
+# ── Restore Claude Desktop config ────────────────────────────────────────────
 if [ -d "$TMPDIR_PREVIEW/claude-desktop" ]; then
   echo "🤖 Restoring Claude Desktop config..."
   for f in claude_desktop_config.json config.json window-state.json git-worktrees.json; do
-    [ -f "$TMPDIR_PREVIEW/claude-desktop/$f" ] && cp "$TMPDIR_PREVIEW/claude-desktop/$f" "$CLAUDE_DIR/$f" && echo "   → $f" || true
+    if [ -f "$TMPDIR_PREVIEW/claude-desktop/$f" ]; then
+      [ -f "$CLAUDE_DIR/$f" ] && mv "$CLAUDE_DIR/$f" "$CLAUDE_DIR/$f${BAK_SUFFIX}" && echo "   ← renamed: $f${BAK_SUFFIX}"
+      cp "$TMPDIR_PREVIEW/claude-desktop/$f" "$CLAUDE_DIR/$f"
+      echo "   → $f"
+    fi
   done
 fi
 
+# ── Restore Claude Code settings ─────────────────────────────────────────────
 if [ -d "$TMPDIR_PREVIEW/claude-code" ]; then
   echo "💻 Restoring Claude Code settings..."
-  rsync -a --delete "$TMPDIR_PREVIEW/claude-code/" "$HOME/.claude/"
+  if [ -d "$HOME/.claude" ]; then
+    mv "$HOME/.claude" "$HOME/.claude${BAK_SUFFIX}"
+    echo "   ← renamed: ~/.claude${BAK_SUFFIX}"
+  fi
+  rsync -a "$TMPDIR_PREVIEW/claude-code/" "$HOME/.claude/"
   echo "   → ~/.claude/"
 fi
 
@@ -127,4 +141,5 @@ git checkout HEAD -- . 2>/dev/null || true
 echo ""
 echo "✅ Restore complete from: $COMMIT_MSG"
 echo ""
-echo "💡 Tip: Restart Claude Desktop for changes to take effect."
+echo "💡 The broken versions were renamed with suffix: $BAK_SUFFIX"
+echo "💡 Restart Claude Desktop for changes to take effect."
