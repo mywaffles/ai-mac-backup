@@ -19,7 +19,7 @@ rsync -a --delete \
 # ── 2. Shell config ──────────────────────────────────────────────────────────
 echo "🐚 Syncing shell config..."
 mkdir -p "$REPO/shell"
-for f in .zshrc .zprofile .bashrc .bash_profile; do
+for f in .zprofile .bashrc .bash_profile; do
   [ -f "$HOME/$f" ] && cp "$HOME/$f" "$REPO/shell/$f" || true
 done
 
