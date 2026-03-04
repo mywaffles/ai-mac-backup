@@ -59,3 +59,9 @@
    skills/ai-backup-mac/SKILL.md | 78 +++++++++++++++++++++++++++++++++++++++++++
    4 files changed, 148 insertions(+), 13 deletions(-)
 
+[2026-03-03 21:30:24] RESTORE from 3970245 backup: 2026-03-03 21:30:22 (2026-03-03 21:30:22 -0700)
+  Renamed (bad files preserved at):
+    \~/.agents/skills.bak-20260303-213024
+    \~/Library/Application Support/Claude/claude_desktop_config.json.bak-20260303-213024
+    \~/.claude.bak-20260303-213024
+
