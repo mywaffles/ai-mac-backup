@@ -48,18 +48,45 @@ COMMIT_MSG=$(git log -1 --pretty=format:"%h %s (%ai)" "$TARGET" 2>/dev/null || e
 echo "📌 Target: $COMMIT_MSG"
 echo ""
 
-# Preview what will change
-CHANGED=$(git diff --name-only "$TARGET" -- skills/ shell/ claude-desktop/ claude-code/ 2>/dev/null || true)
+# ── Preview: check out target into temp dir and diff vs live filesystem ──────
+TMPDIR_PREVIEW=$(mktemp -d)
+trap "rm -rf $TMPDIR_PREVIEW" EXIT
+
+git --work-tree="$TMPDIR_PREVIEW" checkout "$TARGET" -- skills/ shell/ claude-desktop/ claude-code/ 2>/dev/null || true
+
+CHANGED=""
+
+# Compare skills
+[ -d "$TMPDIR_PREVIEW/skills" ] && CHANGED+=$(diff -rq "$TMPDIR_PREVIEW/skills" "$HOME/.agents/skills" 2>/dev/null | sed 's/^/  /' || true)
+
+# Compare shell
+for f in .zprofile .bashrc .bash_profile; do
+  if [ -f "$TMPDIR_PREVIEW/shell/$f" ]; then
+    diff -q "$TMPDIR_PREVIEW/shell/$f" "$HOME/$f" 2>/dev/null || CHANGED+="  shell/$f differs"$'\n'
+  fi
+done
+
+# Compare claude-desktop
+CLAUDE_DIR="$HOME/Library/Application Support/Claude"
+for f in claude_desktop_config.json config.json window-state.json git-worktrees.json; do
+  if [ -f "$TMPDIR_PREVIEW/claude-desktop/$f" ]; then
+    diff -q "$TMPDIR_PREVIEW/claude-desktop/$f" "$CLAUDE_DIR/$f" 2>/dev/null || CHANGED+="  claude-desktop/$f differs"$'\n'
+  fi
+done
+
+# Compare claude-code
+[ -d "$TMPDIR_PREVIEW/claude-code" ] && CHANGED+=$(diff -rq "$TMPDIR_PREVIEW/claude-code" "$HOME/.claude" 2>/dev/null | sed 's/^/  /' || true)
+
 if [ -z "$CHANGED" ]; then
   echo "✅ No differences from current state — nothing to restore."
   exit 0
 fi
 
-echo "📝 Files that will be restored:"
-echo "$CHANGED" | sed 's/^/  /'
+echo "📝 Differences between backup and current state:"
+echo "$CHANGED"
 echo ""
 
-read -r -p "⚠️  Restore these files? This will overwrite current versions. [y/N] " confirm
+read -r -p "⚠️  Restore from backup? This will overwrite current versions. [y/N] " confirm
 if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
   echo "Cancelled."
   exit 0
@@ -67,42 +94,34 @@ fi
 
 echo ""
 
-# ── Restore skills ───────────────────────────────────────────────────────────
-if [ -d "$REPO/skills" ]; then
+# ── Restore from the temp checkout ──────────────────────────────────────────
+if [ -d "$TMPDIR_PREVIEW/skills" ]; then
   echo "📦 Restoring skills..."
-  git checkout "$TARGET" -- skills/ 2>/dev/null || true
-  rsync -a --delete "$REPO/skills/" "$HOME/.agents/skills/"
+  rsync -a --delete "$TMPDIR_PREVIEW/skills/" "$HOME/.agents/skills/"
   echo "   → ~/.agents/skills/"
 fi
 
-# ── Restore shell config ─────────────────────────────────────────────────────
-if [ -d "$REPO/shell" ]; then
+if [ -d "$TMPDIR_PREVIEW/shell" ]; then
   echo "🐚 Restoring shell config..."
-  git checkout "$TARGET" -- shell/ 2>/dev/null || true
   for f in .zprofile .bashrc .bash_profile; do
-    [ -f "$REPO/shell/$f" ] && cp "$REPO/shell/$f" "$HOME/$f" && echo "   → ~/$f" || true
+    [ -f "$TMPDIR_PREVIEW/shell/$f" ] && cp "$TMPDIR_PREVIEW/shell/$f" "$HOME/$f" && echo "   → ~/$f" || true
   done
 fi
 
-# ── Restore Claude Desktop config ────────────────────────────────────────────
-if [ -d "$REPO/claude-desktop" ]; then
+if [ -d "$TMPDIR_PREVIEW/claude-desktop" ]; then
   echo "🤖 Restoring Claude Desktop config..."
-  git checkout "$TARGET" -- claude-desktop/ 2>/dev/null || true
-  CLAUDE_DIR="$HOME/Library/Application Support/Claude"
   for f in claude_desktop_config.json config.json window-state.json git-worktrees.json; do
-    [ -f "$REPO/claude-desktop/$f" ] && cp "$REPO/claude-desktop/$f" "$CLAUDE_DIR/$f" && echo "   → $f" || true
+    [ -f "$TMPDIR_PREVIEW/claude-desktop/$f" ] && cp "$TMPDIR_PREVIEW/claude-desktop/$f" "$CLAUDE_DIR/$f" && echo "   → $f" || true
   done
 fi
 
-# ── Restore Claude Code settings ─────────────────────────────────────────────
-if [ -d "$REPO/claude-code" ]; then
+if [ -d "$TMPDIR_PREVIEW/claude-code" ]; then
   echo "💻 Restoring Claude Code settings..."
-  git checkout "$TARGET" -- claude-code/ 2>/dev/null || true
-  rsync -a --delete "$REPO/claude-code/" "$HOME/.claude/"
+  rsync -a --delete "$TMPDIR_PREVIEW/claude-code/" "$HOME/.claude/"
   echo "   → ~/.claude/"
 fi
 
-# Reset git state back to HEAD after checkouts
+# Reset repo working tree back to HEAD
 git checkout HEAD -- . 2>/dev/null || true
 
 echo ""
