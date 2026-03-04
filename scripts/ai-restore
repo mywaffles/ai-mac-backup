@@ -13,14 +13,26 @@ LOG="$REPO/ai-backup.log"
 BAK_SUFFIX=".bak-$(date '+%Y%m%d-%H%M%S')"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 
-if [ ! -d "$REPO/.git" ]; then
-  echo "❌ Repo not found at $REPO"
-  exit 1
-fi
+# ── Guards ───────────────────────────────────────────────────────────────────
+[ -d "$REPO/.git" ] || { echo "❌ Repo not found at $REPO"; exit 1; }
+[ -f "$CONF" ]      || { echo "❌ Config not found at $CONF"; exit 1; }
 
 cd "$REPO"
 
-# ── Default: list backups ────────────────────────────────────────────────────
+# ── Shared: resolve dest path for a source path ──────────────────────────────
+dest_for() {
+  local src="$1"
+  local name; name=$(basename "$src")
+  if [ -f "$src" ] || [[ "$src" != */ ]] && [ ! -d "$src" ]; then
+    # treat as file path (may not exist on disk yet if restoring)
+    local parent; parent=$(basename "$(dirname "$src")" | tr ' ' '-')
+    echo "files/$parent/$name"
+  else
+    echo "$name"
+  fi
+}
+
+# ── List mode ────────────────────────────────────────────────────────────────
 if [ "${1:-}" = "" ]; then
   echo "📋 Available backups (most recent first):"
   echo ""
@@ -32,67 +44,70 @@ if [ "${1:-}" = "" ]; then
   exit 0
 fi
 
-# ── Determine target commit ──────────────────────────────────────────────────
+# ── Resolve target commit ─────────────────────────────────────────────────────
 if [ "${1}" = "--last" ]; then
   TARGET=$(git log -1 --pretty=format:"%h" --grep="^backup:")
-  if [ -z "$TARGET" ]; then
-    echo "❌ No backups found."
-    exit 1
-  fi
+  [ -n "$TARGET" ] || { echo "❌ No backups found."; exit 1; }
   LABEL="last backup"
 else
   TARGET="${1}"
   LABEL="commit $TARGET"
 fi
 
-echo "🔄 ai-restore from $LABEL"
-echo ""
-
 COMMIT_MSG=$(git log -1 --pretty=format:"%h %s (%ai)" "$TARGET" 2>/dev/null || echo "unknown")
+echo "🔄 ai-restore from $LABEL"
 echo "📌 Target: $COMMIT_MSG"
 echo ""
 
-# ── Checkout target into temp dir ────────────────────────────────────────────
+# ── Checkout target into temp dir ─────────────────────────────────────────────
 TMPDIR_RESTORE=$(mktemp -d)
-trap "rm -rf $TMPDIR_RESTORE" EXIT
-
+trap 'rm -rf "$TMPDIR_RESTORE"' EXIT
 git --work-tree="$TMPDIR_RESTORE" checkout "$TARGET" -- . 2>/dev/null || true
 
-# ── Diff backup vs live, building restore plan ───────────────────────────────
+# ── Build restore plan: collect (source, repo_copy) pairs that differ ─────────
+declare -a PLAN_SRC=()
+declare -a PLAN_REPO=()
 CHANGED=""
 
 while IFS= read -r line; do
-  [[ "$line" =~ ^[[:space:]]*$ ]] && continue
+  [[ "$line" =~ ^[[:space:]]*$  ]] && continue
   [[ "$line" =~ ^[[:space:]]*# ]] && continue
 
-  SOURCE="${line/\~/$HOME}"
-  DEST_NAME=$(basename "$SOURCE")
+  SOURCE="${line/#\~/$HOME}"
+  DEST_REL=$(dest_for "$SOURCE")
+  REPO_COPY="$TMPDIR_RESTORE/$DEST_REL"
 
   if [ -f "$SOURCE" ]; then
-    PARENT=$(basename "$(dirname "$SOURCE")")
-    PARENT="${PARENT/Application Support/app-support}"
-    REPO_COPY="$TMPDIR_RESTORE/files/$PARENT/$DEST_NAME"
-    [ -f "$REPO_COPY" ] && { diff -q "$REPO_COPY" "$SOURCE" 2>/dev/null || CHANGED+="  $line differs"$'\n'; }
+    if [ -f "$REPO_COPY" ] && ! diff -q "$REPO_COPY" "$SOURCE" &>/dev/null; then
+      CHANGED+="  $line differs"$'\n'
+      PLAN_SRC+=("$SOURCE")
+      PLAN_REPO+=("$REPO_COPY")
+    fi
   elif [ -d "$SOURCE" ]; then
-    REPO_COPY="$TMPDIR_RESTORE/$DEST_NAME"
-    [ -d "$REPO_COPY" ] && CHANGED+=$(diff -rq "$REPO_COPY" "$SOURCE" 2>/dev/null | sed 's/^/  /' || true)
+    if [ -d "$REPO_COPY" ]; then
+      DIFF=$(diff -rq "$REPO_COPY" "$SOURCE" 2>/dev/null | sed 's/^/  /' || true)
+      if [ -n "$DIFF" ]; then
+        CHANGED+="$DIFF"$'\n'
+        PLAN_SRC+=("$SOURCE")
+        PLAN_REPO+=("$REPO_COPY")
+      fi
+    fi
   fi
 done < "$CONF"
 
 if [ -z "$CHANGED" ]; then
   echo "✅ No differences from current state — nothing to restore."
-  echo "[$TIMESTAMP] RESTORE: no differences from $COMMIT_MSG" >> "$LOG"
+  printf '[%s] RESTORE: no differences from %s\n\n' "$TIMESTAMP" "$COMMIT_MSG" >> "$LOG"
   exit 0
 fi
 
 echo "📝 Differences between backup and current state:"
 echo "$CHANGED"
-echo ""
 
-read -r -p "⚠️  Restore from backup? Existing files will be renamed to *${BAK_SUFFIX}. [y/N] " confirm
+read -r -p "⚠️  Restore from backup? Existing files will be renamed *${BAK_SUFFIX}. [y/N] " confirm
 if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
   echo "Cancelled."
-  echo "[$TIMESTAMP] RESTORE: cancelled (target: $COMMIT_MSG)" >> "$LOG"
+  printf '[%s] RESTORE: cancelled (target: %s)\n\n' "$TIMESTAMP" "$COMMIT_MSG" >> "$LOG"
   exit 0
 fi
 
@@ -102,51 +117,35 @@ echo ""
 
 RENAMED=()
 
-# ── Restore each path ────────────────────────────────────────────────────────
-while IFS= read -r line; do
-  [[ "$line" =~ ^[[:space:]]*$ ]] && continue
-  [[ "$line" =~ ^[[:space:]]*# ]] && continue
-
-  SOURCE="${line/\~/$HOME}"
-  DEST_NAME=$(basename "$SOURCE")
+# ── Execute restore plan ──────────────────────────────────────────────────────
+for i in "${!PLAN_SRC[@]}"; do
+  SOURCE="${PLAN_SRC[$i]}"
+  REPO_COPY="${PLAN_REPO[$i]}"
 
   if [ -f "$SOURCE" ]; then
-    PARENT=$(basename "$(dirname "$SOURCE")")
-    PARENT="${PARENT/Application Support/app-support}"
-    REPO_COPY="$TMPDIR_RESTORE/files/$PARENT/$DEST_NAME"
-    if [ -f "$REPO_COPY" ]; then
-      if [ -f "$SOURCE" ]; then
-        mv "$SOURCE" "${SOURCE}${BAK_SUFFIX}"
-        echo "  ← renamed: ${line}${BAK_SUFFIX}"
-        RENAMED+=("${line}${BAK_SUFFIX}")
-      fi
-      cp "$REPO_COPY" "$SOURCE"
-      echo "  → $line"
-    fi
+    mv "$SOURCE" "${SOURCE}${BAK_SUFFIX}"
+    echo "  ← renamed: ${SOURCE/#$HOME/\~}${BAK_SUFFIX}"
+    RENAMED+=("${SOURCE/#$HOME/\~}${BAK_SUFFIX}")
+    cp "$REPO_COPY" "$SOURCE"
+    echo "  → ${SOURCE/#$HOME/\~}"
+
   elif [ -d "$SOURCE" ]; then
-    REPO_COPY="$TMPDIR_RESTORE/$DEST_NAME"
-    if [ -d "$REPO_COPY" ]; then
-      if [ -d "$SOURCE" ]; then
-        mv "$SOURCE" "${SOURCE}${BAK_SUFFIX}"
-        echo "  ← renamed: ${line}${BAK_SUFFIX}"
-        RENAMED+=("${line}${BAK_SUFFIX}")
-      fi
-      rsync -a "$REPO_COPY/" "$SOURCE/"
-      echo "  → $line"
-    fi
+    mv "$SOURCE" "${SOURCE}${BAK_SUFFIX}"
+    echo "  ← renamed: ${SOURCE/#$HOME/\~}${BAK_SUFFIX}"
+    RENAMED+=("${SOURCE/#$HOME/\~}${BAK_SUFFIX}")
+    rsync -a "$REPO_COPY/" "$SOURCE/"
+    echo "  → ${SOURCE/#$HOME/\~}"
   fi
-done < "$CONF"
+done
 
 # Reset repo working tree
 git checkout HEAD -- . 2>/dev/null || true
 
 # ── Log & push ────────────────────────────────────────────────────────────────
 {
-  echo "[$TIMESTAMP] RESTORE from $COMMIT_MSG"
+  printf '[%s] RESTORE from %s\n' "$TIMESTAMP" "$COMMIT_MSG"
   echo "  Renamed (bad files preserved at):"
-  for r in "${RENAMED[@]}"; do
-    echo "    $r"
-  done
+  for r in "${RENAMED[@]}"; do printf '    %s\n' "$r"; done
   echo ""
 } >> "$LOG"
 
@@ -156,6 +155,5 @@ git push
 
 echo ""
 echo "✅ Restore complete from: $COMMIT_MSG"
-echo ""
 echo "💡 Bad files renamed with suffix: $BAK_SUFFIX"
 echo "💡 Restart Claude Desktop for changes to take effect."
