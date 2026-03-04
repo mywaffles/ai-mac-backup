@@ -113,3 +113,14 @@
    skills/TEST-backup-skill/SKILL.md |  6 -----
    3 files changed, 43 insertions(+), 20 deletions(-)
 
+[2026-03-03 21:50:29] BACKUP
+   .gitignore                     |  1 +
+   agent/models.json              | 28 +++++++++++++
+   backup-paths.conf              |  6 +++
+   files/.openclaw/openclaw.json  | 89 ++++++++++++++++++++++++++++++++++++++++++
+   files/Claude/config.json       |  4 +-
+   files/Claude/window-state.json |  2 +-
+   identity/device-auth.json      | 18 +++++++++
+   identity/device.json           |  7 ++++
+   8 files changed, 152 insertions(+), 3 deletions(-)
+
