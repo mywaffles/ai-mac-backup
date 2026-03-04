@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ai-restore — restore Claude/AI config dirs from ~/ai-mac-backup
+# ai-restore — restore Claude/AI config dirs from ~/ai-backup-mac
 # Usage:
 #   ai-restore              → list available backups
 #   ai-restore --last       → restore from most recent backup
@@ -7,8 +7,10 @@
 
 set -euo pipefail
 
-REPO="$HOME/ai-mac-backup"
+REPO="$HOME/ai-backup-mac"
+LOG="$REPO/ai-backup.log"
 BAK_SUFFIX=".bak-$(date '+%Y%m%d-%H%M%S')"
+TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 
 if [ ! -d "$REPO/.git" ]; then
   echo "❌ Repo not found at $REPO"
@@ -49,7 +51,7 @@ COMMIT_MSG=$(git log -1 --pretty=format:"%h %s (%ai)" "$TARGET" 2>/dev/null || e
 echo "📌 Target: $COMMIT_MSG"
 echo ""
 
-# ── Checkout target into temp dir and diff vs live filesystem ────────────────
+# ── Checkout target into temp dir and diff vs live ───────────────────────────
 TMPDIR_PREVIEW=$(mktemp -d)
 trap "rm -rf $TMPDIR_PREVIEW" EXIT
 
@@ -72,6 +74,7 @@ done
 
 if [ -z "$CHANGED" ]; then
   echo "✅ No differences from current state — nothing to restore."
+  echo "[$TIMESTAMP] RESTORE: no differences from $COMMIT_MSG" >> "$LOG"
   exit 0
 fi
 
@@ -82,6 +85,7 @@ echo ""
 read -r -p "⚠️  Restore from backup? Existing files will be renamed to *${BAK_SUFFIX}. [y/N] " confirm
 if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
   echo "Cancelled."
+  echo "[$TIMESTAMP] RESTORE: cancelled by user (target: $COMMIT_MSG)" >> "$LOG"
   exit 0
 fi
 
@@ -89,12 +93,16 @@ echo ""
 echo "📁 Backup suffix: $BAK_SUFFIX"
 echo ""
 
+# Track renamed files for log
+RENAMED=()
+
 # ── Restore skills ───────────────────────────────────────────────────────────
 if [ -d "$TMPDIR_PREVIEW/skills" ]; then
   echo "📦 Restoring skills..."
   if [ -d "$HOME/.agents/skills" ]; then
     mv "$HOME/.agents/skills" "$HOME/.agents/skills${BAK_SUFFIX}"
     echo "   ← renamed: ~/.agents/skills${BAK_SUFFIX}"
+    RENAMED+=("~/.agents/skills${BAK_SUFFIX}")
   fi
   rsync -a "$TMPDIR_PREVIEW/skills/" "$HOME/.agents/skills/"
   echo "   → ~/.agents/skills/"
@@ -105,7 +113,11 @@ if [ -d "$TMPDIR_PREVIEW/shell" ]; then
   echo "🐚 Restoring shell config..."
   for f in .zprofile .bashrc .bash_profile; do
     if [ -f "$TMPDIR_PREVIEW/shell/$f" ]; then
-      [ -f "$HOME/$f" ] && mv "$HOME/$f" "$HOME/$f${BAK_SUFFIX}" && echo "   ← renamed: ~/$f${BAK_SUFFIX}"
+      if [ -f "$HOME/$f" ]; then
+        mv "$HOME/$f" "$HOME/$f${BAK_SUFFIX}"
+        echo "   ← renamed: ~/$f${BAK_SUFFIX}"
+        RENAMED+=("~/$f${BAK_SUFFIX}")
+      fi
       cp "$TMPDIR_PREVIEW/shell/$f" "$HOME/$f"
       echo "   → ~/$f"
     fi
@@ -117,7 +129,11 @@ if [ -d "$TMPDIR_PREVIEW/claude-desktop" ]; then
   echo "🤖 Restoring Claude Desktop config..."
   for f in claude_desktop_config.json config.json window-state.json git-worktrees.json; do
     if [ -f "$TMPDIR_PREVIEW/claude-desktop/$f" ]; then
-      [ -f "$CLAUDE_DIR/$f" ] && mv "$CLAUDE_DIR/$f" "$CLAUDE_DIR/$f${BAK_SUFFIX}" && echo "   ← renamed: $f${BAK_SUFFIX}"
+      if [ -f "$CLAUDE_DIR/$f" ]; then
+        mv "$CLAUDE_DIR/$f" "$CLAUDE_DIR/$f${BAK_SUFFIX}"
+        echo "   ← renamed: $f${BAK_SUFFIX}"
+        RENAMED+=("Claude/$f${BAK_SUFFIX}")
+      fi
       cp "$TMPDIR_PREVIEW/claude-desktop/$f" "$CLAUDE_DIR/$f"
       echo "   → $f"
     fi
@@ -130,6 +146,7 @@ if [ -d "$TMPDIR_PREVIEW/claude-code" ]; then
   if [ -d "$HOME/.claude" ]; then
     mv "$HOME/.claude" "$HOME/.claude${BAK_SUFFIX}"
     echo "   ← renamed: ~/.claude${BAK_SUFFIX}"
+    RENAMED+=("~/.claude${BAK_SUFFIX}")
   fi
   rsync -a "$TMPDIR_PREVIEW/claude-code/" "$HOME/.claude/"
   echo "   → ~/.claude/"
@@ -138,8 +155,23 @@ fi
 # Reset repo working tree back to HEAD
 git checkout HEAD -- . 2>/dev/null || true
 
+# ── Log ───────────────────────────────────────────────────────────────────────
+{
+  echo "[$TIMESTAMP] RESTORE from $COMMIT_MSG"
+  echo "  Renamed (bad files preserved at):"
+  for r in "${RENAMED[@]}"; do
+    echo "    $r"
+  done
+  echo ""
+} >> "$LOG"
+
+# ── Commit the log update ─────────────────────────────────────────────────────
+git add "$LOG"
+git diff --staged --quiet || git commit -m "log: restore at $TIMESTAMP"
+git push
+
 echo ""
 echo "✅ Restore complete from: $COMMIT_MSG"
 echo ""
-echo "💡 The broken versions were renamed with suffix: $BAK_SUFFIX"
+echo "💡 Bad files renamed with suffix: $BAK_SUFFIX"
 echo "💡 Restart Claude Desktop for changes to take effect."

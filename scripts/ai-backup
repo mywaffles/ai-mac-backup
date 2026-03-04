@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
-# ai-backup — snapshot Claude/AI config dirs into ~/ai-mac-backup and push to GitHub
+# ai-backup — snapshot Claude/AI config dirs into ~/ai-backup-mac and push to GitHub
 
 set -euo pipefail
 
-REPO="$HOME/ai-mac-backup"
+REPO="$HOME/ai-backup-mac"
+LOG="$REPO/ai-backup.log"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+
+if [ ! -d "$REPO/.git" ]; then
+  echo "❌ Repo not found at $REPO"
+  exit 1
+fi
 
 echo "🔄 ai-backup starting: $TIMESTAMP"
 echo ""
@@ -27,39 +33,44 @@ done
 echo "🤖 Syncing Claude Desktop config..."
 mkdir -p "$REPO/claude-desktop"
 CLAUDE_DIR="$HOME/Library/Application Support/Claude"
-
-# Copy only config files, not cache/blob/session data
 for f in claude_desktop_config.json config.json window-state.json git-worktrees.json; do
   [ -f "$CLAUDE_DIR/$f" ] && cp "$CLAUDE_DIR/$f" "$REPO/claude-desktop/$f" || true
 done
 
-# Claude Code settings
+# ── 4. Claude Code settings ──────────────────────────────────────────────────
 [ -d "$HOME/.claude" ] && rsync -a --delete \
   --exclude='*.log' --exclude='.DS_Store' --exclude='__pycache__' \
   --exclude='statsig/' --exclude='ide/' \
   "$HOME/.claude/" "$REPO/claude-code/" || true
 
-# ── 4. Git commit & push ─────────────────────────────────────────────────────
+# ── 5. Git commit & push ─────────────────────────────────────────────────────
 echo ""
 cd "$REPO"
 
-# Check if anything changed
 if git diff --quiet && git diff --staged --quiet && [ -z "$(git ls-files --others --exclude-standard)" ]; then
   echo "✅ Nothing changed since last backup."
+  echo "[$TIMESTAMP] BACKUP: no changes" >> "$LOG"
   exit 0
 fi
 
 git add -A
 
-# Show what's changing
 echo "📝 Changes:"
-git diff --staged --stat
+CHANGES=$(git diff --staged --stat)
+echo "$CHANGES"
 
 git commit -m "backup: $TIMESTAMP"
 
 echo ""
 echo "⬆️  Pushing to GitHub..."
 git push
+
+# ── 6. Log ───────────────────────────────────────────────────────────────────
+{
+  echo "[$TIMESTAMP] BACKUP"
+  echo "$CHANGES" | sed 's/^/  /'
+  echo ""
+} >> "$LOG"
 
 echo ""
 echo "✅ Backup complete: $TIMESTAMP"
