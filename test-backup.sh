@@ -177,7 +177,26 @@ section "Test: ai-backup with no changes"
 bash /opt/homebrew/bin/ai-backup > /tmp/ai-backup-noop.log 2>&1
 check_grep "no-op backup detects no changes" "Nothing changed" /tmp/ai-backup-noop.log
 
-# ── Results ───────────────────────────────────────────────────────────────────
+
+# -- 10. Test: scripts-differ warning when snapshot differs
+section "Test: warning when snapshot scripts differ from current"
+
+cp "$REPO/scripts/ai-backup" /tmp/ai-backup-orig-test
+echo "# test modification" >> "$REPO/scripts/ai-backup"
+echo "" | bash /opt/homebrew/bin/ai-restore --last > /tmp/ai-restore-warn.log 2>&1 || true
+cp /tmp/ai-backup-orig-test "$REPO/scripts/ai-backup"
+check_grep "scripts-differ warning shown" "this snapshot has different versions" /tmp/ai-restore-warn.log
+check_grep "warning says not overwritten" "NOT be overwritten" /tmp/ai-restore-warn.log
+
+# -- 11. Test: restore reads backup-paths.conf from snapshot
+section "Test: restore uses backup-paths.conf from snapshot"
+
+echo "~/FAKE-PATH-SHOULD-NOT-RESTORE" >> "$CONF"
+echo "y" | bash /opt/homebrew/bin/ai-restore --last > /tmp/ai-restore-snapconf.log 2>&1 || true
+grep -v "FAKE-PATH" "$CONF" > /tmp/conf-cleaned && mv /tmp/conf-cleaned "$CONF"
+check_no_grep "snapshot conf used (fake path ignored)" "FAKE-PATH-SHOULD-NOT-RESTORE" /tmp/ai-restore-snapconf.log
+
+# -- Results ───────────────────────────────────────────────────────────────────
 echo ""
 echo "╔══════════════════════════════════════════════════════════╗"
 TOTAL=$((PASS + FAIL))
