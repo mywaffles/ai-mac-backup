@@ -177,3 +177,8 @@
    skills/TEST-backup-skill/SKILL.md | 6 ------
    2 files changed, 6 insertions(+), 6 deletions(-)
 
+[2026-03-03 22:10:56] BACKUP
+   files/openclaw-workspace/AGENTS.md | 15 +++++++++++++++
+   skills/ai-backup-mac/SKILL.md      | 14 +++++++++++++-
+   2 files changed, 28 insertions(+), 1 deletion(-)
+
