@@ -1,0 +1,12 @@
+2026-03-02T22:35:54.953Z [DEBUG] MDM settings load completed in 11ms
+2026-03-02T22:35:54.983Z [DEBUG] [init] configureGlobalMTLS starting
+2026-03-02T22:35:54.983Z [DEBUG] [init] configureGlobalMTLS complete
+2026-03-02T22:35:54.983Z [DEBUG] [init] configureGlobalAgents starting
+2026-03-02T22:35:54.983Z [DEBUG] [init] configureGlobalAgents complete
+2026-03-02T22:35:54.984Z [DEBUG] Git remote URL: null
+2026-03-02T22:35:54.984Z [DEBUG] No git remote URL found
+2026-03-02T22:35:55.477Z [DEBUG] SSH config check: code=255 configured=false
+2026-03-02T22:35:55.477Z [INFO] SSH not configured for GitHub, using HTTPS for anthropics/claude-plugins-official
+2026-03-02T22:35:55.477Z [DEBUG] git pull: cwd=/Users/mattabar/.claude/plugins/marketplaces/anthropics-claude-plugins-official ref=default
+2026-03-02T22:35:55.481Z [WARN] git pull failed, will re-clone:
+2026-03-02T22:35:55.481Z [DEBUG] git clone: url=https://github.com/anthropics/claude-plugins-official.git ref=default timeout=120000ms

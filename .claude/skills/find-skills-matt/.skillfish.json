@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "name": "find-skills",
+  "owner": "heyflouai",
+  "repo": "ikf-central-dashboard",
+  "path": ".claude/skills/find-skills",
+  "branch": "main",
+  "sha": "c2f31172b6f256272305a5e6e7228b258446899f",
+  "source": "manual"
+}
