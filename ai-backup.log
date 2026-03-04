@@ -124,3 +124,15 @@
    identity/device.json           |  7 ++++
    8 files changed, 152 insertions(+), 3 deletions(-)
 
+[2026-03-03 21:52:07] BACKUP
+   .../.openclaw/workspace-state.json                 |   4 +
+   files/openclaw-workspace/AGENTS.md                 | 212 +++++++++++++++++++++
+   files/openclaw-workspace/BOOTSTRAP.md              |  55 ++++++
+   files/openclaw-workspace/HEARTBEAT.md              |   5 +
+   files/openclaw-workspace/IDENTITY.md               |  13 ++
+   files/openclaw-workspace/SOUL.md                   |  36 ++++
+   files/openclaw-workspace/TOOLS.md                  |  40 ++++
+   files/openclaw-workspace/USER.md                   |  15 ++
+   files/openclaw-workspace/memory/2026-03-02.md      |  76 ++++++++
+   9 files changed, 456 insertions(+)
+
