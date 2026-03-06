@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PinchChat — Webchat UI for OpenClaw</title>
+  <meta name="description" content="A sleek, dark-themed webchat UI for OpenClaw. Monitor sessions, stream responses, and inspect tool calls in real-time." />
+  <meta property="og:title" content="PinchChat" />
+  <meta property="og:description" content="A sleek, dark-themed webchat UI for OpenClaw." />
+  <meta property="og:image" content="https://raw.githubusercontent.com/MarlBurroW/pinchchat/main/public/og-card.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="PinchChat — Webchat UI for OpenClaw" />
+  <meta name="twitter:description" content="A sleek, dark-themed webchat UI for OpenClaw. Monitor sessions, stream responses, and inspect tool calls in real-time." />
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/MarlBurroW/pinchchat/main/public/og-card.png" />
+  <meta property="og:url" content="https://marlburrow.github.io/pinchchat/" />
+  <link rel="canonical" href="https://marlburrow.github.io/pinchchat/" />
+  <meta name="robots" content="index, follow" />
+  <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/MarlBurroW/pinchchat/main/public/logo.png" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "PinchChat",
+    "description": "A sleek, dark-themed webchat UI for OpenClaw. Monitor sessions, stream responses, and inspect tool calls in real-time.",
+    "url": "https://marlburrow.github.io/pinchchat/",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Web",
+    "license": "https://opensource.org/licenses/MIT",
+    "codeRepository": "https://github.com/MarlBurroW/pinchchat",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #12121a;
+      --bg-card: #1a1a2e;
+      --border: #2a2a3e;
+      --text-primary: #e4e4e7;
+      --text-secondary: #a1a1aa;
+      --accent-cyan: #22d3ee;
+      --accent-purple: #a78bfa;
+      --accent-pink: #f472b6;
+      --glow-cyan: rgba(34, 211, 238, 0.15);
+      --glow-purple: rgba(167, 139, 250, 0.15);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    .bg-gradient {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -20%, var(--glow-cyan), transparent),
+        radial-gradient(ellipse 60% 40% at 80% 60%, var(--glow-purple), transparent),
+        var(--bg-primary);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    /* ─── Hero ─── */
+    .hero {
+      text-align: center;
+      padding: 4rem 0 2rem;
+    }
+
+    .hero-top {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .hero-logo {
+      width: 72px;
+      height: 72px;
+      filter: drop-shadow(0 0 20px rgba(34, 211, 238, 0.3));
+      animation: float 4s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    .hero h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero .tagline {
+      font-size: 1.15rem;
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0 auto 1.5rem;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.75rem;
+      border-radius: 0.75rem;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+      color: var(--bg-primary);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(34, 211, 238, 0.3);
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover {
+      border-color: var(--accent-cyan);
+      transform: translateY(-2px);
+    }
+
+    /* ─── Demo window (in hero) ─── */
+    .demo-window {
+      display: flex;
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      overflow: hidden;
+      height: 420px;
+      background: var(--bg-secondary);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 80px rgba(34,211,238,0.06);
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .demo-sidebar {
+      width: 210px;
+      min-width: 210px;
+      background: #0d0d14;
+      border-right: 1px solid var(--border);
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .demo-sidebar-header {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-weight: 700; font-size: 0.95rem; padding: 0.5rem 0.25rem 0.75rem;
+      color: var(--text-primary);
+    }
+    .demo-sidebar-logo { width: 22px; height: 22px; border-radius: 4px; }
+    .demo-session {
+      padding: 0.5rem 0.6rem;
+      border-radius: 0.5rem;
+      cursor: default;
+      transition: background 0.15s;
+    }
+    .demo-session-active { background: rgba(34,211,238,0.08); }
+    .demo-session-name { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.3rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 0.35rem; }
+    .demo-session-active .demo-session-name { color: var(--text-primary); }
+    .demo-session-icon { font-size: 0.7rem; opacity: 0.6; flex-shrink: 0; }
+    .demo-token-bar { height: 3px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
+    .demo-token-fill { height: 100%; background: var(--accent-cyan); border-radius: 2px; transition: width 1s ease; }
+    .demo-token-low { background: #4ade80; }
+
+    .demo-chat { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .demo-chat-scroll { flex: 1; overflow-y: auto; padding: 1.25rem 1.25rem 0.5rem; display: flex; flex-direction: column; gap: 1rem; text-align: left; }
+    .demo-input {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      border-top: 1px solid var(--border);
+    }
+    .demo-input-box {
+      flex: 1; background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      border-radius: 0.5rem; padding: 0.5rem 0.75rem;
+      font-size: 0.85rem; color: var(--text-primary); min-height: 34px;
+      font-family: inherit;
+    }
+    .demo-send-btn {
+      width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+      border-radius: 0.5rem; color: var(--bg-primary); font-size: 1rem; cursor: default;
+    }
+
+    .demo-msg { display: flex; gap: 0.6rem; animation: msgIn 0.3s ease; padding: 0.35rem 0; }
+    .demo-msg-user { flex-direction: row-reverse; }
+    @keyframes msgIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .demo-avatar {
+      width: 32px; height: 32px; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; flex-shrink: 0; margin-top: 2px;
+      border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03);
+    }
+    .demo-avatar-user { background: rgba(34,211,238,0.08); color: var(--accent-cyan); }
+    .demo-avatar-bot { background: rgba(255,255,255,0.03); color: var(--accent-cyan); }
+    .demo-msg-body { flex: 1; min-width: 0; }
+    .demo-msg-body-user { text-align: right; }
+    .demo-bubble {
+      display: inline-block; text-align: left;
+      border-radius: 1.25rem; padding: 0.65rem 0.9rem;
+      font-size: 0.82rem; line-height: 1.55; max-width: 100%;
+    }
+    .demo-bubble-user {
+      background: linear-gradient(to bottom, rgba(6,182,212,0.25), rgba(8,145,178,0.15));
+      border: 1px solid rgba(34,211,238,0.3);
+      color: var(--text-primary);
+    }
+    .demo-bubble-bot {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: #d4d4d8;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.02);
+    }
+    .demo-msg-text { font-size: 0.82rem; line-height: 1.55; color: inherit; }
+    .demo-msg-text code { background: rgba(255,255,255,0.06); padding: 0.1em 0.35em; border-radius: 3px; font-size: 0.78rem; font-family: 'SF Mono','Fira Code',monospace; }
+    .demo-date-sep {
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0; user-select: none;
+    }
+    .demo-date-sep::before, .demo-date-sep::after {
+      content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.06);
+    }
+    .demo-date-sep span {
+      font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+      color: #71717a;
+    }
+
+    .demo-thinking {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      font-size: 0.78rem; color: var(--accent-purple); padding: 0.3rem 0;
+    }
+    .demo-thinking-dots span {
+      display: inline-block; width: 4px; height: 4px; background: var(--accent-purple);
+      border-radius: 50%; animation: blink 1.2s infinite;
+    }
+    .demo-thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .demo-thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes blink { 0%,80%,100% { opacity: 0.2; } 40% { opacity: 1; } }
+
+    .demo-tool {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      padding: 0.2rem 0.55rem; border-radius: 0.375rem; font-size: 0.75rem; font-weight: 500;
+      border: 1px solid; margin: 0.2rem 0.3rem 0.2rem 0; cursor: default;
+      transition: all 0.2s;
+    }
+    .demo-tool-exec { border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.1); color: #fcd34d; }
+    .demo-tool-read { border-color: rgba(14,165,233,0.3); background: rgba(14,165,233,0.1); color: #7dd3fc; }
+    .demo-tool-web { border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.1); color: #6ee7b7; }
+    .demo-tool-edit { border-color: rgba(139,92,246,0.3); background: rgba(139,92,246,0.1); color: #c4b5fd; }
+    .demo-tool-memory { border-color: rgba(244,63,94,0.3); background: rgba(244,63,94,0.1); color: #fda4af; }
+
+    .demo-tool-expand {
+      margin: 0.2rem 0 0.3rem;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 0.5rem;
+      background: rgba(255,255,255,0.02);
+      font-size: 0.73rem;
+      overflow: hidden;
+      animation: expandIn 0.3s ease;
+    }
+    @keyframes expandIn { from { opacity:0; max-height:0; } to { opacity:1; max-height:200px; } }
+    .demo-tool-expand-header {
+      padding: 0.35rem 0.6rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .demo-tool-expand-body {
+      padding: 0.35rem 0.6rem;
+      color: var(--text-secondary);
+      font-family: 'SF Mono','Fira Code',monospace;
+      font-size: 0.7rem;
+      white-space: pre-wrap;
+      max-height: 80px;
+      overflow: hidden;
+    }
+
+    .demo-cursor { display: inline-block; width: 2px; height: 1em; background: var(--accent-cyan); animation: cursorBlink 0.8s step-end infinite; vertical-align: text-bottom; margin-left: 1px; }
+    @keyframes cursorBlink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+    /* ─── Docker oneliner ─── */
+    .oneliner-section {
+      text-align: center;
+      padding: 2.5rem 0 1rem;
+    }
+    .oneliner-label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+    }
+    .oneliner {
+      max-width: 700px;
+      margin: 0 auto;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1rem 1.5rem;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.9rem;
+      color: var(--accent-cyan);
+      text-align: left;
+      position: relative;
+      overflow-x: auto;
+    }
+    .oneliner::before {
+      content: '$ ';
+      color: var(--accent-purple);
+    }
+
+    /* ─── Features — alternating sections ─── */
+    .features-section {
+      padding: 4rem 0 2rem;
+    }
+
+    .features-heading {
+      text-align: center;
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+
+    .features-sub {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 1rem;
+      max-width: 560px;
+      margin: 0 auto 3.5rem;
+    }
+
+    .feature-row {
+      display: flex;
+      align-items: center;
+      gap: 3rem;
+      margin-bottom: 4rem;
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .feature-row.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .feature-row:nth-child(even) {
+      flex-direction: row-reverse;
+    }
+
+    .feature-row-text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .feature-row-visual {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    .feature-row-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .feature-row-text h3 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .feature-row-text p {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Visual panels for features */
+    .feature-visual-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      width: 100%;
+      max-width: 360px;
+    }
+
+    .fv-tool-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .fv-session-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .fv-session-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.5rem 0.6rem;
+      border-radius: 0.5rem;
+      background: rgba(255,255,255,0.03);
+    }
+
+    .fv-session-item.active {
+      background: rgba(34,211,238,0.08);
+    }
+
+    .fv-session-label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      flex: 1;
+    }
+
+    .fv-session-item.active .fv-session-label { color: var(--text-primary); }
+
+    .fv-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: #4ade80; flex-shrink: 0;
+    }
+
+    .fv-dot-idle { background: var(--text-secondary); opacity: 0.4; }
+
+    .fv-stream-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .fv-stream-line {
+      height: 8px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, rgba(34,211,238,0.2), rgba(167,139,250,0.1));
+      animation: streamPulse 2s ease-in-out infinite;
+    }
+
+    .fv-stream-line:nth-child(2) { width: 85%; animation-delay: 0.3s; }
+    .fv-stream-line:nth-child(3) { width: 60%; animation-delay: 0.6s; }
+    .fv-stream-line:nth-child(4) { width: 90%; animation-delay: 0.9s; }
+
+    @keyframes streamPulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+
+    .fv-token-bar-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .fv-token-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .fv-token-label {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      width: 80px;
+      flex-shrink: 0;
+    }
+
+    .fv-token-track {
+      flex: 1;
+      height: 6px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .fv-token-value {
+      height: 100%;
+      border-radius: 3px;
+      background: var(--accent-cyan);
+      transition: width 1.5s ease;
+    }
+
+    .fv-token-pct {
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+      width: 32px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .fv-image-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    .fv-image-placeholder {
+      aspect-ratio: 1;
+      border-radius: 0.5rem;
+      background: linear-gradient(135deg, rgba(34,211,238,0.1), rgba(167,139,250,0.1));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .fv-lang-toggle {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .fv-lang-btn {
+      padding: 0.4rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-secondary);
+    }
+
+    .fv-lang-btn.active {
+      background: rgba(34,211,238,0.1);
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+    }
+
+    /* ─── Footer ─── */
+    .footer {
+      text-align: center;
+      padding: 4rem 0 2rem;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+    .footer a { color: var(--accent-cyan); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+    .footer-links { display: flex; gap: 2rem; justify-content: center; margin-bottom: 1rem; }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 700px) {
+      .hero { padding: 3rem 0 1.5rem; }
+      .hero h1 { font-size: 2.2rem; }
+      .demo-sidebar { display: none; }
+      .demo-window { height: 360px; }
+      .feature-row, .feature-row:nth-child(even) {
+        flex-direction: column;
+        gap: 1.5rem;
+        text-align: center;
+      }
+      .feature-visual-panel { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-gradient"></div>
+
+  <!-- ════ HERO + DEMO ════ -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-top">
+        <img src="https://raw.githubusercontent.com/MarlBurroW/pinchchat/main/public/logo.png" alt="PinchChat Logo" class="hero-logo" />
+        <h1>PinchChat</h1>
+      </div>
+      <p class="tagline">A sleek webchat UI for <a href="https://github.com/openclaw/openclaw" style="color: var(--accent-cyan); text-decoration: none;">OpenClaw</a>. Monitor sessions, stream AI responses, and inspect tool calls — all in real-time.</p>
+      <div class="buttons">
+        <a href="https://github.com/MarlBurroW/pinchchat#-quick-start" class="btn btn-primary">🚀 Get Started</a>
+        <a href="https://github.com/MarlBurroW/pinchchat" class="btn btn-secondary">⭐ GitHub</a>
+      </div>
+
+      <!-- Live demo GIF -->
+      <div style="max-width: 1200px; margin: 0 auto; border-radius: 1rem; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 80px rgba(34,211,238,0.06); border: 1px solid var(--border);">
+        <img src="demo.gif" alt="PinchChat Demo" style="width: 100%; display: block;" />
+      </div>
+    </div>
+  </section>
+
+  <!-- ════ ONELINER ════ -->
+  <div class="oneliner-section">
+    <div class="container">
+      <p class="oneliner-label">Run it now with one command:</p>
+      <div class="oneliner">docker run -p 3000:80 ghcr.io/marlburrow/pinchchat:latest</div>
+    </div>
+  </div>
+
+  <!-- ════ FEATURES — alternating left/right ════ -->
+  <section class="features-section">
+    <div class="container">
+      <h2 class="features-heading">Why PinchChat?</h2>
+      <p class="features-sub">Everything you need to interact with your OpenClaw agent — nothing you don't.</p>
+
+      <!-- 1. Tool Call Visualization -->
+      <div class="feature-row">
+        <div class="feature-row-text">
+          <div class="feature-row-icon">🔧</div>
+          <h3>Tool Call Visualization</h3>
+          <p>See what your agent is doing in real-time. Colored badges, visible parameters, expandable results — the feature missing from every other chat UI.</p>
+        </div>
+        <div class="feature-row-visual">
+          <div class="feature-visual-panel">
+            <div class="fv-tool-badges">
+              <span class="demo-tool demo-tool-web">🌐 web_search</span>
+              <span class="demo-tool demo-tool-exec">⚡ exec</span>
+              <span class="demo-tool demo-tool-read">📖 read</span>
+              <span class="demo-tool demo-tool-edit">✏️ edit</span>
+              <span class="demo-tool demo-tool-memory">🧠 memory_search</span>
+            </div>
+            <div class="demo-tool-expand" style="margin-top:0.6rem; animation:none;">
+              <div class="demo-tool-expand-header">▶ web_search</div>
+              <div class="demo-tool-expand-body">{ "query": "latest AI news" }
+
+✓ 3 results found</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Multi-Session -->
+      <div class="feature-row">
+        <div class="feature-row-text">
+          <div class="feature-row-icon">📋</div>
+          <h3>Multi-Session Navigation</h3>
+          <p>Browse all active sessions — main chat, cron jobs, sub-agents, background tasks. Everything in one sidebar.</p>
+        </div>
+        <div class="feature-row-visual">
+          <div class="feature-visual-panel">
+            <div class="fv-session-list">
+              <div class="fv-session-item active"><span class="fv-dot"></span><span class="fv-session-label">🏠 Main Session</span></div>
+              <div class="fv-session-item"><span class="fv-dot"></span><span class="fv-session-label">⏰ Daily Cron</span></div>
+              <div class="fv-session-item"><span class="fv-dot fv-dot-idle"></span><span class="fv-session-label">🚀 Sub-Agent #3</span></div>
+              <div class="fv-session-item"><span class="fv-dot fv-dot-idle"></span><span class="fv-session-label">📧 Email Checker</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Live Streaming -->
+      <div class="feature-row">
+        <div class="feature-row-text">
+          <div class="feature-row-icon">⚡</div>
+          <h3>Live Streaming</h3>
+          <p>Watch the agent think and write token by token. Full WebSocket streaming from your OpenClaw gateway.</p>
+        </div>
+        <div class="feature-row-visual">
+          <div class="feature-visual-panel">
+            <div class="fv-stream-lines">
+              <div class="fv-stream-line" style="width:100%"></div>
+              <div class="fv-stream-line"></div>
+              <div class="fv-stream-line"></div>
+              <div class="fv-stream-line"></div>
+            </div>
+            <div style="margin-top:0.75rem;">
+              <span class="demo-thinking">Thinking <span class="demo-thinking-dots"><span></span><span></span><span></span></span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Token Usage -->
+      <div class="feature-row">
+        <div class="feature-row-text">
+          <div class="feature-row-icon">📊</div>
+          <h3>Token Usage Tracking</h3>
+          <p>Progress bars per session showing context usage in real-time. Know exactly how much headroom is left.</p>
+        </div>
+        <div class="feature-row-visual">
+          <div class="feature-visual-panel">
+            <div class="fv-token-bar-wrapper">
+              <div class="fv-token-row">
+                <span class="fv-token-label">Main</span>
+                <div class="fv-token-track"><div class="fv-token-value" style="width:42%"></div></div>
+                <span class="fv-token-pct">42%</span>
+              </div>
+              <div class="fv-token-row">
+                <span class="fv-token-label">Cron</span>
+                <div class="fv-token-track"><div class="fv-token-value" style="width:18%"></div></div>
+                <span class="fv-token-pct">18%</span>
+              </div>
+              <div class="fv-token-row">
+                <span class="fv-token-label">Sub-Agent</span>
+                <div class="fv-token-track"><div class="fv-token-value" style="width:75%"></div></div>
+                <span class="fv-token-pct">75%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. GPT-like + Chat-focused (combined) -->
+      <div class="feature-row">
+        <div class="feature-row-text">
+          <div class="feature-row-icon">💬</div>
+          <h3>Familiar & Focused</h3>
+          <p>A GPT-like interface — sessions in a sidebar, switch between conversations. No settings menus or config panels cluttering the screen. Just the conversation, clean and efficient.</p>
+        </div>
+        <div class="feature-row-visual">
+          <div class="feature-visual-panel" style="text-align:center; padding: 2rem 1.25rem;">
+            <div style="font-size:2.5rem; margin-bottom:0.75rem;">🎯</div>
+            <div style="font-size:0.9rem; color: var(--text-secondary);">Zero config clutter.<br>Just you and your agent.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Images + i18n -->
+      <div class="feature-row">
+        <div class="feature-row-text">
+          <div class="feature-row-icon">🖼️</div>
+          <h3>Inline Images & i18n</h3>
+          <p>Generated or read images render directly in chat with a click-to-zoom lightbox. English and French built-in — easy to add new languages.</p>
+        </div>
+        <div class="feature-row-visual">
+          <div class="feature-visual-panel">
+            <div class="fv-image-grid" style="margin-bottom:0.75rem;">
+              <div class="fv-image-placeholder">🌄</div>
+              <div class="fv-image-placeholder">🎨</div>
+            </div>
+            <div class="fv-lang-toggle" style="justify-content:center;">
+              <span class="fv-lang-btn active">EN</span>
+              <span class="fv-lang-btn">FR</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════ RECENT UPDATES ════ -->
+  <section class="features-section" style="padding-top: 2rem;">
+    <div class="container">
+      <h2 class="features-heading">Recent Updates</h2>
+      <p class="features-sub">Actively maintained — here's what landed recently.</p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-top: 2rem;">
+
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1.25rem;">
+          <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🎨</div>
+          <h3 style="color: var(--text-primary); font-size: 0.95rem; margin-bottom: 0.35rem;">Themes & Accent Colors</h3>
+          <p style="color: var(--text-secondary); font-size: 0.82rem; line-height: 1.5;">Dark, Light, OLED Black, and System (auto) themes. Six accent colors to match your style. All persisted in localStorage.</p>
+          <span style="display: inline-block; margin-top: 0.5rem; font-size: 0.7rem; color: var(--cyan); opacity: 0.7;">v1.20 – v1.29</span>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1.25rem;">
+          <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🧠</div>
+          <h3 style="color: var(--text-primary); font-size: 0.95rem; margin-bottom: 0.35rem;">Thinking & Reasoning Display</h3>
+          <p style="color: var(--text-secondary); font-size: 0.82rem; line-height: 1.5;">See the agent's reasoning in collapsible blocks. Hidden thinking shows an elapsed timer. Streamed thinking renders live.</p>
+          <span style="display: inline-block; margin-top: 0.5rem; font-size: 0.7rem; color: var(--cyan); opacity: 0.7;">v1.18 – v1.25</span>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1.25rem;">
+          <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">📐</div>
+          <h3 style="color: var(--text-primary); font-size: 0.95rem; margin-bottom: 0.35rem;">Split View</h3>
+          <p style="color: var(--text-secondary); font-size: 0.82rem; line-height: 1.5;">View two sessions side by side with a resizable divider. Full chat in both panes — history, streaming, sending.</p>
+          <span style="display: inline-block; margin-top: 0.5rem; font-size: 0.7rem; color: var(--cyan); opacity: 0.7;">v1.28</span>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1.25rem;">
+          <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🔍</div>
+          <h3 style="color: var(--text-primary); font-size: 0.95rem; margin-bottom: 0.35rem;">Message Search</h3>
+          <p style="color: var(--text-secondary); font-size: 0.82rem; line-height: 1.5;">Ctrl+F to search and highlight messages in the current session. Navigate between results with arrow keys.</p>
+          <span style="display: inline-block; margin-top: 0.5rem; font-size: 0.7rem; color: var(--cyan); opacity: 0.7;">v1.22</span>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1.25rem;">
+          <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">✨</div>
+          <h3 style="color: var(--text-primary); font-size: 0.95rem; margin-bottom: 0.35rem;">Syntax Highlighting Input</h3>
+          <p style="color: var(--text-secondary); font-size: 0.82rem; line-height: 1.5;">Real-time markdown highlighting while you type — code blocks, bold, italic, headings, and links colored in the input.</p>
+          <span style="display: inline-block; margin-top: 0.5rem; font-size: 0.7rem; color: var(--cyan); opacity: 0.7;">v1.27</span>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1.25rem;">
+          <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🔀</div>
+          <h3 style="color: var(--text-primary); font-size: 0.95rem; margin-bottom: 0.35rem;">Drag & Drop Sessions</h3>
+          <p style="color: var(--text-secondary); font-size: 0.82rem; line-height: 1.5;">Reorder sessions by dragging them in the sidebar. Custom order persists across reloads.</p>
+          <span style="display: inline-block; margin-top: 0.5rem; font-size: 0.7rem; color: var(--cyan); opacity: 0.7;">v1.26</span>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1.25rem;">
+          <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">👤</div>
+          <h3 style="color: var(--text-primary); font-size: 0.95rem; margin-bottom: 0.35rem;">Agent Avatars</h3>
+          <p style="color: var(--text-secondary); font-size: 0.82rem; line-height: 1.5;">Displays the agent's custom avatar from OpenClaw config next to messages and in the header. Falls back to a default icon.</p>
+          <span style="display: inline-block; margin-top: 0.5rem; font-size: 0.7rem; color: var(--cyan); opacity: 0.7;">v1.19</span>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1.25rem;">
+          <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">📋</div>
+          <h3 style="color: var(--text-primary); font-size: 0.95rem; margin-bottom: 0.35rem;">Raw JSON & Metadata</h3>
+          <p style="color: var(--text-secondary); font-size: 0.82rem; line-height: 1.5;">Toggle raw gateway JSON on any message. Hover to reveal the metadata inspector — timestamps, IDs, channel info.</p>
+          <span style="display: inline-block; margin-top: 0.5rem; font-size: 0.7rem; color: var(--cyan); opacity: 0.7;">v1.15 – v1.24</span>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1.25rem;">
+          <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">⌨️</div>
+          <h3 style="color: var(--text-primary); font-size: 0.95rem; margin-bottom: 0.35rem;">Keyboard Shortcuts</h3>
+          <p style="color: var(--text-secondary); font-size: 0.82rem; line-height: 1.5;">Alt+↑/↓ to switch sessions, ⌘K for session search, ⌘F for message search, ? for the shortcuts panel.</p>
+          <span style="display: inline-block; margin-top: 0.5rem; font-size: 0.7rem; color: var(--cyan); opacity: 0.7;">v1.13</span>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-links">
+        <a href="https://github.com/MarlBurroW/pinchchat">GitHub</a>
+        <a href="https://github.com/openclaw/openclaw">OpenClaw</a>
+        <a href="https://discord.com/invite/clawd">Community</a>
+        <a href="https://github.com/MarlBurroW/pinchchat/blob/main/LICENSE">MIT License</a>
+      </div>
+      <p>Built with ❤️ for the <a href="https://github.com/openclaw/openclaw">OpenClaw</a> community</p>
+    </div>
+  </footer>
+
+  <script>
+  (function() {
+    // ── Scroll reveal for feature rows ──
+    const rows = document.querySelectorAll('.feature-row');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+    }, { threshold: 0.15 });
+    rows.forEach(r => observer.observe(r));
+  })();
+  </script>
+</body>
+</html>

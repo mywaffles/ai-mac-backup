@@ -225,3 +225,51 @@ The goal: Be helpful without being annoying. Check in a few times a day, do usef
 ## Make It Yours
 
 This is a starting point. Add your own conventions, style, and rules as you figure out what works.
+
+## Config Safety Rule
+
+**NEVER edit ~/.openclaw/openclaw.json directly.** OpenClaw uses strict schema validation and will refuse to start if you write an invalid key. Instead, use the CLI:
+
+- `openclaw config set <path> <value>` — validates before writing
+- `openclaw config get <path>` — read a value
+- `openclaw config unset <path>` — remove a value
+
+Examples:
+- `openclaw config set channels.telegram.botToken "123:abc"`
+- `openclaw config set agents.defaults.model.primary "openrouter/anthropic/claude-sonnet-4.5"`
+
+If you break the config, the gateway crashes and you can't recover without human intervention. Don't do it.
+
+## 🎯 TODO Updates - ALWAYS Real-Time
+
+**CRITICAL RULE: Update TODOs the moment you discover completion.**
+
+Applies to ALL work (research, browsing, email checking, etc.):
+
+1. Discover task is complete → **Update TODO file immediately**
+2. Found new info → **Update Research.md immediately** (if in project)
+3. **Don't batch, don't wait** → Sync in real-time
+4. Update file FIRST → Then continue working
+
+**Examples:**
+- Found notification in TalkingParents? → Mark TODO complete NOW
+- Saw booking confirmation in email? → Update file NOW
+- Learned decision was made? → Check box NOW
+
+**Files to update:**
+- `To Do (PARA).md` (main TODO list)
+- `10_PROJECTS/Active/[project]/Tasks.md` (project tasks)
+- `10_PROJECTS/Active/[project]/Research.md` (research findings)
+
+---
+
+## Research Projects
+
+When starting any formal research project:
+1. **ALWAYS use the template:** Run `~/.agents/skills/para-second-brain/scripts/new-research-project.sh "<project-name>"`
+2. **Never create research projects manually** — the template structure is mandatory
+3. **Validate structure** before archiving (check for all required files)
+4. **Extract lessons learned** to Resources before archiving
+
+Template location: `10_PROJECTS/_Templates/Research Project Template/`
+Reference: `~/.agents/skills/para-second-brain/references/research-projects.md`

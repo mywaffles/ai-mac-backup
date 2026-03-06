@@ -1,7 +1,7 @@
 {
   "meta": {
-    "lastTouchedVersion": "2026.3.1",
-    "lastTouchedAt": "2026-03-03T03:57:08.369Z"
+    "lastTouchedVersion": "2026.3.2",
+    "lastTouchedAt": "2026-03-05T06:43:13.813Z"
   },
   "env": {
     "OPENROUTER_API_KEY": "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"
@@ -23,8 +23,12 @@
         "openrouter/deepseek/deepseek-chat": {},
         "openrouter/anthropic/claude-opus-4.6": {}
       },
+      "workspace": "~/.openclaw/workspace",
       "memorySearch": {
-        "enabled": false
+        "enabled": true
+      },
+      "compaction": {
+        "mode": "safeguard"
       }
     },
     "list": [
@@ -50,6 +54,16 @@
       }
     }
   },
+  "messages": {
+    "responsePrefix": "🦞 Model: {model} • {timestamp}\\n\\n",
+    "tts": {
+      "auto": "always",
+      "provider": "edge",
+      "edge": {
+        "voice": "en-US-GuyNeural"
+      }
+    }
+  },
   "commands": {
     "native": "auto",
     "nativeSkills": "auto",
@@ -57,8 +71,18 @@
     "ownerDisplay": "raw"
   },
   "channels": {
-    "bluebubbles": {
+    "telegram": {
       "enabled": true,
+      "dmPolicy": "pairing",
+      "botToken": "8536950567:AAEix6e-GUoh7GvGkuodtGdi6jk2dG9SmAA",
+      "groupAllowFrom": [
+        "6823814370"
+      ],
+      "groupPolicy": "allowlist",
+      "streaming": "partial"
+    },
+    "bluebubbles": {
+      "enabled": false,
       "serverUrl": "http://localhost:1234",
       "password": "kFLgsMGaEuK8jtMuDjUq",
       "dmPolicy": "allowlist",
@@ -71,12 +95,28 @@
       "groupPolicy": "allowlist"
     }
   },
+  "talk": {
+    "voiceId": "EXAVITQu4vr4xnSDxMaL",
+    "modelId": "eleven_turbo_v2_5",
+    "apiKey": "sk_6d4363352af79bb977defc06af30c7725e1ceba36fcf655b",
+    "interruptOnSpeech": true
+  },
   "gateway": {
     "port": 18789,
     "mode": "local",
-    "bind": "loopback",
+    "bind": "lan",
+    "controlUi": {
+      "allowedOrigins": [
+        "https://matts-mac-mini.taild6165e.ts.net:18789",
+        "http://localhost:18789",
+        "http://127.0.0.1:18789"
+      ]
+    },
     "auth": {
       "token": "Oo10NdDx1cVqsoWf3CCcnSp2M_7N5nkO"
+    },
+    "tls": {
+      "enabled": true
     }
   },
   "plugins": {

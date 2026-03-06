@@ -1,4 +1,74 @@
 {
   "version": 1,
-  "jobs": []
+  "jobs": [
+    {
+      "id": "592bebae-2f36-4833-ac8c-515fb3164777",
+      "agentId": "main",
+      "name": "talk-mode-fix-watch",
+      "enabled": true,
+      "createdAtMs": 1772638112308,
+      "updatedAtMs": 1772820263747,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 * * * *",
+        "staggerMs": 300000
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Check if OpenClaw Talk Mode crash fix (PR #33550 / issue #33424) has been merged and released. Steps: 1) Check PR state with gh pr view 33550 --repo openclaw/openclaw --json state,mergedAt. 2) If merged, check latest release with gh release view --repo openclaw/openclaw --json tagName,createdAt. 3) If a new release exists (newer than v2026.3.2), notify Matt that the Talk Mode fix is live and he should update OpenClaw. 4) If merged but not released yet, or not merged, stay silent (HEARTBEAT_OK style - just reply with NO_REPLY).",
+        "model": "openrouter/anthropic/claude-sonnet-4.5"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "last"
+      },
+      "state": {
+        "nextRunAtMs": 1772823863747,
+        "lastRunAtMs": 1772820262412,
+        "lastRunStatus": "error",
+        "lastStatus": "error",
+        "lastDurationMs": 1335,
+        "lastDelivered": true,
+        "lastDeliveryStatus": "delivered",
+        "consecutiveErrors": 30,
+        "lastError": "400 google/gemini-2.5-flash-preview is not a valid model ID"
+      }
+    },
+    {
+      "id": "073b7425-4ffc-43c3-9be5-5d041735eb11",
+      "agentId": "main",
+      "name": "lockhill-booking-check",
+      "enabled": true,
+      "createdAtMs": 1772656015646,
+      "updatedAtMs": 1772816401962,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 10 * * *"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Check Lockhill escape room website (https://www.lockhill.gr) for booking availability for July 9-10, 2026. Target rooms: Sanatorium (Midnight Mode, 2.5h) and Chapel & Catacombs (2h). If slots are available, notify Matt immediately with booking link. If not available yet, reply NO_REPLY (silent check). Stop checking after bookings are made or we're past the target dates.",
+        "model": "openrouter/anthropic/claude-sonnet-4.5"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "last"
+      },
+      "state": {
+        "nextRunAtMs": 1772902800000,
+        "lastRunAtMs": 1772816400027,
+        "lastRunStatus": "error",
+        "lastStatus": "error",
+        "lastDurationMs": 1935,
+        "lastDelivered": true,
+        "lastDeliveryStatus": "delivered",
+        "consecutiveErrors": 2,
+        "lastError": "400 google/gemini-2.5-flash-preview is not a valid model ID"
+      }
+    }
+  ]
 }
